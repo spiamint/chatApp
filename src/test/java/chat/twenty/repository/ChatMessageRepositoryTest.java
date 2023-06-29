@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 @SpringBootTest
 @Slf4j
 @Transactional
-class ChatChatMessageRepositoryTest {
+class ChatMessageRepositoryTest {
 
     @Autowired
     ChatMessageRepository chatMessageRepository;

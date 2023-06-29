@@ -4,3 +4,6 @@ master commit 1
 
     master commit 1.1
         체인지로그, 리드미 추가
+
+master commit 2
+    TwentyMessage 및 mapper, service, repo 추가와 테스트

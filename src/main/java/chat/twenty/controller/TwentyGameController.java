@@ -15,7 +15,6 @@ import chat.twenty.service.lower.RoomMemberService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.configurationprocessor.json.JSONException;
-import org.springframework.boot.configurationprocessor.json.JSONObject;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -29,7 +28,6 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 @Controller
 @Slf4j
@@ -39,9 +37,9 @@ public class TwentyGameController {
     private final RoomMemberService memberService;
     private final ChatMessageService chatMessageService;
     private final TwentyGameService twentyGameService;
-    private final CustomGptService gptService;
+//    private final CustomGptService gptService;
 
-    private final MessagePreProcessor messagePreProcessor;
+//    private final MessagePreProcessor messagePreProcessor;
     private final TwentyMessagePreProcessor twentyMessagePreProcessor;
     private final SimpMessagingTemplate messageTemplate;
 
@@ -49,7 +47,7 @@ public class TwentyGameController {
     @MessageMapping("/twenty-game/{roomId}")
     public void handleChat(@Header("simpSessionAttributes") Map<String, String> simpSessionAttributes,
                            @Payload ChatMessageDto chatMessageDto,
-                           @DestinationVariable Long roomId) throws JSONException {
+                           @DestinationVariable Long roomId) {
         // simpSessionAttributes 는 ConcurrentHashMap<String, Object> attributes 이지만, <String, String> 으로 받아도 에러가 나지 않는다...
         log.info("handleChat() messageDto = {} roomId = {} simpSessionAttributes = {}, attr class = {}", chatMessageDto, roomId, simpSessionAttributes, simpSessionAttributes.getClass().getName());
 

@@ -1,0 +1,20 @@
+spring:
+  profiles:
+    include: gpt, local-db
+  thymeleaf:
+    prefix: classpath:/templates/   #spring.mvc.static-path-pattern=/static/**
+  messages:
+    basename: errorMessage
+
+mybatis:
+  type-aliases-package: chat.twenty.domain
+  mapper-locations: classpath:mapper/*.xml # resources/mapper/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+
+logging:
+  config: classpath:logback-local.xml
+
+
+server:
+  port: 5000

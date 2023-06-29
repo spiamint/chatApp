@@ -1,0 +1,574 @@
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+  <title>Chat WebSocket</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-KK94CHFLLe+nY2dmCWGMq91rCGa5gtU4mk92HdvYe+M/SXH301p5ILy+dN9+nJOZ" crossorigin="anonymous">
+  <style>
+      h4 {
+          margin-top: 20px;
+      }
+
+      #sendGptMessageBtn {
+          display: none;
+      }
+
+      .modal-body > label {
+          padding: 8px;
+      }
+
+      #unReadyBtn {
+          display: none;
+      }
+
+      #conversationBox {
+          margin-bottom: 20px;
+      }
+
+      .conversation-list-item {
+          /*background-color: white;*/
+          /*border-style: solid;*/
+          /*border-width: medium;*/
+          margin-bottom: 10px;
+      }
+
+      .twenty-game-ask-conversation, .twenty-game-from-gpt-conversation{
+          border-left: red solid 3px;
+      }
+
+      /*.twenty-game-from-gpt-conversation {*/
+      /*    border-bottom: green solid 4px;*/
+      /*}*/
+
+      .myConversation {
+          background-color: lightblue;
+          /*border-color: lightblue;*/
+      }
+
+      .otherConversation {
+          background-color: lightgray;
+          /*border-color: lightgray;*/
+      }
+
+      .gptConversation {
+          background-color: lightgreen;
+          /*border-color: lightgreen;*/
+      }
+
+      .systemConversation {
+          background-color: white;
+          /*border-color: black;*/
+      }
+
+      .twenty-asking-conversation-input {
+          border: green solid 3px;
+      }
+
+
+
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.4.0/sockjs.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+  <script type="text/javascript" th:inline="javascript">
+
+      /*<![CDATA[*/
+      let thCurrentMember = [[${currentMember}]];
+      /*]]>*/
+
+      // STOMP 변수
+      let stompClient = null;
+      let currentSubscription = null;
+
+      // 가장 최근 전달된 메시지를 담는 messageDTO
+      let messageDTO = {
+          from: '',
+          text: '',
+          time: '',
+          order: '',
+          type: '',
+          isGptChat: false,
+          gptUuid: null,
+      }
+
+      document.addEventListener('DOMContentLoaded', function () {
+
+          // DOM 요소 탐색
+          let fromInput = document.getElementById('from');
+          let textInput = document.getElementById('text');
+          let roomData = document.getElementById('roomId');
+
+          let conversationInput = document.getElementById('conversationInput');
+          let conversationList = document.getElementById('conversationList');
+
+          // 이벤트 리스터용 DOM 요소 탐색
+          let memberListBtn = document.getElementById('memberListBtn');
+          let sendMessageBtn = document.getElementById('sendMessageBtn');
+          let sendGptMessageBtn = document.getElementById('sendGptMessageBtn');
+          let unSubscribeBtn = document.getElementById('unSubscribeBtn');
+          let startBtn = document.getElementById('startBtn');
+          let readyBtn = document.getElementById('readyBtn');
+          let unReadyBtn = document.getElementById('unReadyBtn');
+          let inputStatus = document.getElementById('inputStatus');
+
+          // let sendUrl = '/app/twenty-game/' + roomData.dataset.roomid;
+          // let subUrl = '/topic/twenty-game/' + roomData.dataset.roomid;
+
+          // connect connectInit()
+          let sendUrl = '';
+          let subUrl = '';
+          let currentRoomId = '';
+          let currentUserId = '';
+          let currentUsername = '';
+
+          // 필요시 초기화될 변수
+          let readyUserCount = 0;
+          let allUserCount = 0;
+          let isCurrentUserReady = false;
+          let myMemberOrder = -1; // 멤버 순서 (syncMemberList 에서 갱신)
+          let myTwentyOrder = -1; // 스무고개 순서 (TWENTY_GAME_START 메시지 오면 갱신)
+          let currentGptUuid; // 스무고개 START 하면 서버에서 uuid 받아서 초기화
+          let twentyWinner;
+          let currentQuestionCount = 0; // 메시지에 표시하기위해 작성됨
+          let remainingOrderCount; // 내 차례까지 남은 횟수. readyUserCount 를 대입한뒤 GPT_ANSWER 마다 1씩감소
+
+          // 초기 Connect 호출
+          connect('chat');
+
+          // eventListener =====================================================================================
+
+          window.addEventListener("beforeunload", function (event) {
+              console.log('event.beforeunload');
+              disconnect("chat");
+          });
+
+
+          sendMessageBtn.addEventListener('click', sendMessage.bind(null, 'CHAT'));
+          sendGptMessageBtn.addEventListener('click', sendMessage.bind(null, 'TWENTY_GAME_ASK'));
+
+          unSubscribeBtn.addEventListener('click', unSubscribe);
+          memberListBtn.addEventListener('click', syncMemberList);
+
+          startBtn.addEventListener('click', sendMessage.bind(null, 'TWENTY_GAME_START'));
+
+          document.querySelectorAll('.changeReadyBtn').forEach(btn => {
+              let toReady = btn.dataset.toready;
+              btn.addEventListener('click', sendMessage.bind(null, toReady == 'true' ? 'TWENTY_GAME_READY' : 'TWENTY_GAME_UNREADY'))
+          });
+
+          // function ===============================================================================================
+
+          // connect 전 상태 초기화
+          function connectInit() {
+              currentUsername = fromInput.value;
+              currentUserId = document.getElementById('userId').value;
+              currentRoomId = roomData.dataset.roomid;
+
+              sendUrl = '/app/twenty-game/' + currentRoomId;
+              subUrl = '/topic/twenty-game/' + currentRoomId;
+
+              if (thCurrentMember.roomOwner == true) startBtn.removeAttribute('disabled');
+              syncMemberList();
+          }
+
+          // 소켓 연결
+          function connect() {
+
+              connectInit();
+
+              // 소켓연결
+              let socket = new SockJS('/chat');
+
+              // STOMP 연결
+              let headers = setHeaders('connect');
+              stompClient = Stomp.over(socket);
+
+              stompClient.connect(headers, function (frame) {
+                  setConnected(true);  // 연결후 html 조정
+                  console.log('Connected: ' + frame);
+
+                  // 서버의 endpoint 에 연결
+                  currentSubscription = stompClient.subscribe(subUrl, function (messageOutput) {
+                      // 서버로부터 메시지를 받으면 실행하는 콜백
+                      let responseBody = JSON.parse(messageOutput.body)
+                      messageDTO = responseBody;
+                      console.log("messageDTO = \n", messageDTO);
+
+                      if (responseBody.type == 'GPT_ENTER' || responseBody.type == 'GPT_LEAVE' || responseBody.type == 'CHAT_FROM_GPT'
+                            || responseBody.type == 'TWENTY_FROM_GPT' || responseBody.type == 'GPT_PROCESSING') {
+                          // GPT 로부터 온 메시지
+                          processGptMessage(responseBody);
+                      } else {
+                          // 유저 or SYSTEM 으로 부터 온 메시지
+                          processMessage(responseBody)
+                      }
+                  });
+              });
+          }
+
+          // 사용자의 구독해제
+          function unSubscribe() {
+              currentSubscription.unsubscribe();
+              // index 로 보냄. (뒤로가기 불가)
+              location.replace('/');
+          }
+
+          function disconnect() {
+              if (stompClient != null) {
+                  stompClient.disconnect(function () {
+                  }, setHeaders('disconnect'));
+              }
+              setConnected(false);
+              console.log("Disconnected");
+          }
+
+          // 연결 여부에 따라 입력 및 스타일 조정
+          function setConnected(connected) {
+              unSubscribeBtn.disabled = !connected;
+              conversationInput.style.visibility
+                  = connected ? 'visible' : 'hidden';
+          }
+
+          /**
+           * 메시지의 header 설정하는 함수
+           * 현재 헤더는 simpSessionAttribute 로 등록하기 위해 사용중.
+           * @param type (stompClient. "send" or "connect")
+           * @returns headers (stomp native headers)
+           */
+          function setHeaders(type) {
+              let headers = {};
+              if (type == 'connect') {
+                  // stompClient.connect() 에서 사용하는 헤더
+                  headers = {
+                      "containsNativeHeader": true,
+                      "headerType": "connect",
+                      "currentUsername": currentUsername,
+                      "currentUserId": currentUserId,
+                      "currentRoomId": currentRoomId,
+                      "sendUrl": sendUrl,
+                      "subUrl": subUrl
+                  }
+              } else if (type == 'send' && messageDTO.isGptChat) {
+                  // stompClient.send() 에서, GPT 메시지 전송시 사용하는 헤더
+                  headers = {
+                      "containsNativeHeader": true,
+                      "headerType": "send",
+                      "gptUuid": messageDTO.gptUuid
+                  }
+              } else if (type == 'disconnect' && messageDTO.isGptChat) {
+                  // stompClient.disconnect() 에서, GPT 종료를 위해 전달하는 헤더 (activate 후 바로 disconnect)
+                  headers = {
+                      "containsNativeHeader": true,
+                      "headerType": "disconnect",
+                      "gptUuid": messageDTO.gptUuid
+                  }
+              }
+
+              return headers;
+          }
+
+          // 메시지 전송
+          function sendMessage(chatMessageType) {
+              let fromVal = fromInput.value;
+              let textVal = textInput.value;
+              let order = document.getElementById('order');
+              let orderVal = myTwentyOrder;
+              let isGptChat = chatMessageType == 'TWENTY_GAME_START' || chatMessageType == 'TWENTY_GAME_ASK' || chatMessageType == 'TWENTY_GAME_ANSWER' ? true : false;
+              let gptUuid = currentGptUuid; // gpt 챗인지는 isGptChat 으로 확인.
+
+              if (isGptChat) {
+                  // 스무고개 게임 시작되면 문제 번호 붙이기.
+                  textVal = currentQuestionCount +". " + textVal;
+              }
+
+              let chatMessage = {
+                  'type': chatMessageType, 'from': fromVal, 'text': textVal,
+                  'order': orderVal,
+                  'isGptChat': isGptChat, 'gptUuid': gptUuid
+              };
+
+              stompClient.send(sendUrl, setHeaders('send'), JSON.stringify(chatMessage));
+              // order.value = parseInt(orderVal) + 1; orderinput 없애야
+          }
+
+          // 일반 메시지 수신 처리
+          function processMessage(chatMessage) {
+              let needShowMessage = true;
+              switch (chatMessage.type) {
+                  case 'ENTER':
+                      break;
+                  case 'LEAVE':
+                      break;
+                  case 'TWENTY_GAME_READY':
+                      needShowMessage = false;
+                      document.getElementById('memberListBtn').click(); // 멤버리스트 갱신 및 ready 버튼 수정
+                      break;
+                  case 'TWENTY_GAME_UNREADY':
+                      needShowMessage = false;
+                      document.getElementById('memberListBtn').click(); // 멤버리스트 갱신 및 ready 버튼 수정
+                      break;
+                  case 'TWENTY_GAME_START':
+                      needShowMessage = false;
+                      currentGptUuid = chatMessage.gptUuid;
+                      myTwentyOrder = chatMessage.orderArray[myMemberOrder];
+                      startBtn.disabled = true;
+                      unReadyBtn.disabled = true;
+                      sendGptMessageBtn.style.display = 'block';
+                      console.log("myTwentyOrder : ", myTwentyOrder);
+                      break;
+                  case 'TWENTY_GAME_ERROR':
+                      // process 메시지 삭제
+                      document.querySelectorAll('.gpt-type-PROCESSING').forEach(item => item.remove());
+                      break;
+                  case 'TWENTY_GAME_END' :
+                      twentyWinner = chatMessage.twentyWinner;
+                      alert(twentyWinner + " 승리");
+                      document.getElementById('memberListBtn').click(); // 멤버리스트 갱신 및 ready 버튼 수정
+                      sendGptMessageBtn.style.display = 'none';
+                      unReadyBtn.disabled = false;
+                      startBtn.disabled = false;
+                      inputStatus.innerText = '대기중';
+                      conversationInput.classList.remove('twenty-asking-conversation-input');
+                      break;
+              }
+
+              if (needShowMessage) showMessage(chatMessage);
+          }
+
+          // GPT 메시지 수신 처리
+          function processGptMessage(chatMessage) {
+              // process 메시지 삭제
+              document.querySelectorAll('.gpt-processing').forEach(item => item.remove());
+
+              // 타입처리
+              switch (chatMessage.type) {
+                  case 'GPT_ENTER':
+                      sendGptMessageBtn.style.display = 'block';
+                      fetch('/a/room/' + currentRoomId + '/gpt-owner-check').then((response) => response.json()).then((data) => {
+                          console.log("data : ", data);
+                          let isGptOwner = data.isGptOwner;
+                          if (isGptOwner) {
+                              deactivateGptBtn.disabled = false;
+                          } else {
+                              deactivateGptBtn.disabled = true;
+                          }
+                      });
+                      break;
+                  case 'GPT_LEAVE':
+                      sendGptMessageBtn.style.display = 'none';
+                      break;
+                  case 'GPT_PROCESSING':
+                      // gpt 답변 생성중
+                      sendGptMessageBtn.disabled = true;
+                      break;
+                  // case 'CHAT_FORM_GPT':
+                  //     // gpt 답변 생성 완료
+                  //     sendGptMessageBtn.style.display = 'block'; // 중간에 들어온 사람이 있을 수 있으므로, 다시 보이게 처리
+                  //     sendGptMessageBtn.disabled = false;
+                  //     break;
+                  case 'TWENTY_FROM_GPT':
+                      // gpt 답변 생성 완료
+                      if (chatMessage.next)
+                      sendGptMessageBtn.disabled = false;
+                      currentQuestionCount += 1; // 질문 카운트 증가
+                      if (chatMessage.order == myTwentyOrder) { // 질문해야할 사람의 order 가 전송된다.
+                          // 내가 질문할 차례인 경우
+                          sendGptMessageBtn.disabled = false;
+                          conversationInput.classList.add('twenty-asking-conversation-input');// 질문박스 하이라이트
+                          inputStatus.innerText = '스무고개 질문 차례입니다';
+                          remainingOrderCount = readyUserCount;
+                      } else {
+                          // 내가 질문한게 아닌 경우
+                          sendGptMessageBtn.disabled = true;
+                          conversationInput.classList.remove('twenty-asking-conversation-input');
+                          remainingOrderCount -= 1;
+                          inputStatus.innerText = '내 차례까지 앞으로 ' + remainingOrderCount;
+                      }
+                      break;
+                  case 'OFFLINE':
+                      break;
+                  default:
+                      break;
+              }
+              showMessage(chatMessage);
+          }
+
+          // 메시지 화면 출력
+          function showMessage(chatMessage) {
+              let listItem = document.createElement('li');
+              let colorClassName = determineConversationColorClass(chatMessage.from);
+              let conversationHighlightClassName = determineConversationTwentyHighlightClass(chatMessage.type);
+              if (chatMessage.type == 'GPT_PROCESSING') listItem.classList.add('gpt-processing');
+              listItem.classList.add('list-group-item', 'conversation-list-item', colorClassName, conversationHighlightClassName);
+              listItem.textContent = chatMessage.from + ": " + chatMessage.text + " (" + convertTime(chatMessage.time) + ")";
+              conversationList.appendChild(listItem);
+              textInput.value = '';
+          }
+
+          function determineConversationColorClass(username) {
+              let className = "";
+              if (username == 'assistant') {
+                  className = "gptConversation";
+              } else if (username == 'SYSTEM') {
+                  className = "systemConversation";
+              } else if (username == currentUsername) {
+                  className = "myConversation";
+              } else {
+                  // 다른 user
+                  className = "otherConversation";
+              }
+              return className;
+          }
+
+          /**
+           * 스무고개 ask, answer 메시지의 강조색상 클래스 결정
+           */
+          function determineConversationTwentyHighlightClass(messageType) {
+              let className = "none";
+              if (messageType == 'TWENTY_GAME_ASK') {
+                  className = "twenty-game-ask-conversation"
+              } if (messageType == 'TWENTY_FROM_GPT') {
+                  className = "twenty-game-from-gpt-conversation"
+              }
+              return className;
+          }
+
+          function convertTime(time) {
+              // time = "2023-06-07T16:23:47";
+              const dateTime = new Date(time); // 원본 시간을 Date 객체로 변환, "2023-06-07T07:23:47.000Z"
+
+              // slice(-2) : 마지막 두글자
+              // ex) minute = 3, '0' + minute = '03', ('0' + minute).slice(-2) = '03'
+              // ex2) minute = 13, '0' + minute = '013', ('0' + minute).slice(-2) = '13'
+
+              const year = dateTime.getFullYear().toString().slice(2); // 연도에서 뒤의 두자리만 가져옴
+              const month = ('0' + (dateTime.getMonth() + 1)).slice(-2); // 월을 가져오고, 1을 더한 뒤, 앞에 0을 붙임
+              const day = ('0' + dateTime.getDate()).slice(-2); // 일을 가져오고, 앞에 0을 붙임
+              const hour = ('0' + dateTime.getHours()).slice(-2); // 시간을 가져오고, 앞에 0을 붙임
+              const minute = ('0' + dateTime.getMinutes()).slice(-2); // 분을 가져오고, 앞에 0을 붙임
+              const second = ('0' + dateTime.getSeconds()).slice(-2); // 초를 가져오고, 앞에 0을 붙임
+
+              const formattedDateTime = `${year}-${month}-${day} ${hour}:${minute}:${second}`; // "yy-MM-dd HH:mm:ss" 형태로 포맷팅합니다.
+
+              console.log(formattedDateTime); // 예시 출력: "23-06-07 16:23:47"
+              return formattedDateTime;
+          }
+
+          function syncMemberList() {
+              fetch('/twenty-game/room/' + currentRoomId + '/members')
+                  .then(response => response.json()) // json 형태의 데이터를 자바스크립트 객체로 변환
+                  .then(data => {
+                      console.log("syncMemberList responseData = {}", data);
+                      let memberList = data.memberList;
+                      let memberListStr = '';
+                      readyUserCount = 0;
+                      for (let i = 0; i < memberList.length; i++) {
+                          // console.log(memberList[i].username);
+                          memberListStr += memberList[i].username + '(' + (memberList[i].isTwentyGameReady ? 'Ready' : "Unready") + ')' + ', ';
+
+                          // ready 된 유저 수 계산
+                          memberList[i].isTwentyGameReady ? readyUserCount += 1 : readyUserCount += 0;
+
+                          console.log("memberList[i].userId = ", memberList[i].userId);
+                          console.log("currentUserId = ", currentUserId);
+
+                          // 현재 유저 ready 상태 수정, myMemberOrder 수정
+                          if (memberList[i].userId == currentUserId) {
+                              myMemberOrder = i;
+                              isCurrentUserReady = memberList[i].isTwentyGameReady;
+                          }
+                      }
+
+                      allUserCount = memberList.length;
+                      remainingOrderCount = readyUserCount; // 실 플레이 유저 - 1 대입
+
+                      console.log("syncMemberList memberListStr =", memberListStr);
+                      console.log('isCurrentUserReady = ', isCurrentUserReady);
+                      console.log('readyUserCount, allUserCount ', readyUserCount, allUserCount);
+                      document.getElementById("memberList").innerHTML = memberListStr;
+
+                      // ready 버튼까지 일단 여기서 관리.
+                      changeReadyBtnStyle(isCurrentUserReady);
+                  });
+          }
+
+          function changeReadyBtnStyle(isCurrentUserReady) {
+              if (isCurrentUserReady == true) {
+                  console.log('change isReady : ' + isCurrentUserReady)
+                  // 준비하기(readyBtn) 클릭, 준비됨(unReadyBtn) 으로 변경
+                  readyBtn.style.display = 'none';
+                  unReadyBtn.style.display = 'block';
+              } else {
+                  // 준비됨(unReadyBtn) 클릭, 준비하기(readyBTn) 로 변경
+                  readyBtn.style.display = 'block';
+                  unReadyBtn.style.display = 'none';
+              }
+          }
+
+          function syncStartButton(isRoomOwner,) {
+
+          }
+
+      }); // DOMContentLoaded
+
+  </script>
+</head>
+<body>
+<div class="container">
+
+  <div>
+    <h2>Chat WebSocket</h2>
+  </div>
+
+  <h4>Room info</h4>
+  <ul>
+    <li id="roomId" th:text="|id ${chatRoom.id}|" th:data-roomid="${chatRoom.id}">roomId</li>
+    <li id="roomName" th:text="|name ${chatRoom.getName}|">roomName</li>
+    <li id="memberList"></li>
+  </ul>
+  <button id="memberListBtn" type="button" class="btn btn-outline-primary">memberList</button>
+
+  <hr>
+
+  <div id="menuBar" class="input-group">
+    <button id="unSubscribeBtn" class="btn btn-outline-danger" disabled='true'>Unsubscribe</button>
+    <button id="readyBtn" class="btn btn-outline-primary changeReadyBtn" data-toready="true">준비하기</button>
+    <button id="unReadyBtn" class="btn btn-outline-success changeReadyBtn" data-toready="false">준비됨</button>
+    <button id="startBtn" class="btn btn-outline-secondary" disabled>start</button>
+  </div>
+
+  <hr>
+
+  <div id="conversationBox" class="card">
+    <div class="card-body">
+      <ul id="conversationList" class="list-group">
+        <!-- Messages will be dynamically added here -->
+      </ul>
+    </div>
+  </div>
+
+  <div id="inputStatusBox">
+    <p id="inputStatus">대기중</p>
+  </div>
+  <form id="conversationInput" class="input-group" sec:authorize="isAuthenticated()">
+    <div class="input-group">
+      <input type="text" id="blockSubmit" style="display: none"/>
+      <input type="text" id="text" class="form-control" placeholder="Write a chatMessage..." value=""/>
+      <input type="hidden" id="from" th:value="${#authentication.name}"/>
+      <input type="hidden" id="order" value="0"/>
+      <input type="hidden" id="userId" th:value="${#authentication.principal.id}">
+      <!--    <input type="hidden" id="type" value="CHAT"/>-->
+      <div class="input-group-append">
+        <button type="button" id="sendMessageBtn" class="btn btn-primary">Send</button>
+      </div>
+      <div class="input-group-append">
+        <button type="button" id="sendGptMessageBtn" class="btn btn-secondary">SendGpt</button>
+      </div>
+    </div>
+  </form>
+
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-ENjdO4Dr2bkBIFxQpeoTz1HIcje39Wm4jDKdf19U8gI4ddQ3GYNS7NTKfAdVQSZe"
+        crossorigin="anonymous"></script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+spring:
+  datasource:
+      url: jdbc:log4jdbc:mysql://localhost:3306/chat
+      username: root
+      password: 1273
+      driver-class-name: net.sf.log4jdbc.sql.jdbcapi.DriverSpy
+
+

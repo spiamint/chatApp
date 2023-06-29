@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!-- .../Project/log/logback -->
+    <property name="LOG_DIR" value="\customLog/logback" />
+
+    <!-- CONSOLE 콘솔 로그-->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <Pattern>
+                CON %highlight(%-5level) %d{HH:mm:ss.SSS} %yellow([%thread]) : %green(%30logger{1}) - %msg %n
+            </Pattern>
+        </layout>
+    </appender>
+
+    <root level="info">
+        <appender-ref ref="CONSOLE" />
+    </root>
+
+    <logger name="jdbc.sqlonly" level="info" additivity="false">
+        <appender-ref ref="CONSOLE" />
+    </logger>
+
+    <!-- jdbc 관련 로그 다 켜져서 일단 끔s -->
+    <logger name="jdbc.sqltiming" level="off"/>
+    <logger name="jdbc.audit" level="off" />
+    <logger name="jdbc.resultset" level="off" />
+    <logger name="jdbc.resultsettable" level="off" />
+    <logger name="jdbc.connection" level="off" />
+
+</configuration>

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="chat.twenty.mapper.ChatroomMapper">
+
+    <select id="findById" resultType="Chatroom">
+        SELECT * FROM CHAT_ROOM WHERE id = #{id}
+    </select>
+
+    <select id="findAll" resultType="Chatroom">
+        SELECT * FROM CHAT_ROOM LIMIT 0, 100
+    </select>
+
+    <insert id="save" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO CHAT_ROOM (name, type, subject, custom_subject) VALUES (#{name}, #{type}, #{subject}, #{customSubject})
+    </insert>
+
+    <update id="update">
+        UPDATE CHAT_ROOM SET name = #{updateParam.name} WHERE id = #{id}
+    </update>
+
+    <update id="updateGptActivated">
+        UPDATE CHAT_ROOM SET is_gpt_activated = #{isGptActivated} WHERE id = #{id}
+    </update>
+
+    <update id="updateTwentyNext">
+        UPDATE CHAT_ROOM SET twenty_next = twenty_next + 1 WHERE id = #{id}
+    </update>
+
+    <update id="updateTwentyNextToZero">
+        UPDATE CHAT_ROOM SET twenty_next = 0 WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM CHAT_ROOM WHERE id = #{id}
+    </delete>
+
+</mapper>

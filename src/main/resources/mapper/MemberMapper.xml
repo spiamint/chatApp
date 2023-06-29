@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="chat.twenty.mapper.RoomMemberMapper">
+
+    <select id="findById" resultType="RoomMember">
+        SELECT * FROM ROOM_MEMBER WHERE room_id = #{roomId} and user_id = #{userId}
+    </select>
+
+    <select id="findAll" resultType="RoomMember">
+        SELECT * FROM ROOM_MEMBER LIMIT 0, 100
+    </select>
+
+    <select id="findAllByRoomId" resultType="RoomMember">
+        SELECT * FROM ROOM_MEMBER WHERE room_id = #{roomId}
+    </select>
+
+    <select id="findGptUuidByRoomId" resultType="String">
+        SELECT gpt_uuid FROM ROOM_MEMBER WHERE room_id = #{roomId} AND gpt_uuid IS NOT NULL
+    </select>
+
+    <select id="findMemberAndUserByRoomId" resultType="chat.twenty.dto.UserMemberDto">
+        SELECT * FROM
+            ROOM_MEMBER m INNER JOIN USER u ON m.user_id = u.id
+        WHERE m.room_id = #{roomId}
+    </select>
+
+    <select id="findIsTwentyReadyMemberByRoomId" resultType="RoomMember">
+        SELECT * FROM ROOM_MEMBER WHERE room_id = #{roomId} AND is_twenty_game_ready = true
+    </select>
+
+    <select id="countMemberByRoomId" resultType="int">
+        SELECT COUNT(*) FROM ROOM_MEMBER WHERE room_id = #{roomId}
+    </select>
+
+    <select id="countIsTwentyReadyMemberByRoomId" resultType="int">
+        SELECT COUNT(*) FROM ROOM_MEMBER WHERE room_id = #{roomId} AND is_twenty_game_ready = true
+    </select>
+
+    <insert id="save">
+        INSERT INTO ROOM_MEMBER (room_id, user_id) VALUES (#{roomId}, #{userId})
+    <!--<if test="#{member.isRoomOwner()}"></if>
+           UPDATE member SET room_owner = true WHERE room_id = #{roomId} and user_id = #{userId}
+    -->
+    </insert>
+
+    <update id="updateIsRoomOwner">
+        UPDATE ROOM_MEMBER SET is_room_owner = #{isRoomOwner} WHERE room_id = #{roomId} and user_id = #{userId}
+    </update>
+
+    <update id="updateIsGptOwner">
+        UPDATE ROOM_MEMBER SET is_gpt_owner = #{isGptOwner} WHERE room_id = #{roomId} and user_id = #{userId}
+    </update>
+
+    <update id="updateIsRoomConnected">
+        UPDATE ROOM_MEMBER SET is_room_connected = #{isRoomConnected} WHERE room_id = #{roomId} and user_id = #{userId}
+    </update>
+
+    <update id="updateIsTwentyGameReady">
+        UPDATE ROOM_MEMBER SET is_twenty_game_ready = #{isTwentyGameReady} WHERE room_id = #{roomId} and user_id = #{userId}
+    </update>
+
+    <update id="updateGptUuid">
+        UPDATE ROOM_MEMBER SET gpt_uuid = #{gptUuid} WHERE room_id = #{roomId} and user_id = #{userId}
+    </update>
+
+
+    <delete id="deleteById">
+        DELETE FROM ROOM_MEMBER WHERE room_id = #{roomId} and user_id = #{userId}
+    </delete>
+
+</mapper>

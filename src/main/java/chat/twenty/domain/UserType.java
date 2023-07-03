@@ -13,9 +13,10 @@ public enum UserType {
     SYSTEM(4L, "system")            // GPT 질의를 위한 시스템유저
     ;
 
-    private final Long id;          // DB 의 id
-    private final String username;
+    public final Long id;          // DB 의 id
+    public final String username;
 
+    // 컴파일러에 의해서만 호출
     UserType(Long id, String username) {
         this.id = id;
         this.username = username;

@@ -1,6 +1,5 @@
 package chat.twenty.service.lower;
 
-import chat.twenty.domain.ChatMessage;
 import chat.twenty.domain.TwentyMessage;
 import chat.twenty.repository.TwentyMessageRepository;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +16,7 @@ public class TwentyMessageService {
     private final TwentyMessageRepository twentyMessageRepository;
 
     public TwentyMessage saveMessage(TwentyMessage twentyMessage) {
+        twentyMessage.setTime();
         return twentyMessageRepository.save(twentyMessage);
     }
 

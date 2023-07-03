@@ -13,36 +13,96 @@
           display: none;
       }
 
-      .modal-body > label {
-          padding: 8px;
+      #conversationBox {
+          margin-bottom: 20px;
       }
+
+      .conversation-list-item {
+          /*background-color: white;*/
+          /*border-style: solid;*/
+          /*border-width: medium;*/
+          margin-bottom: 10px;
+      }
+
+      .conversation-list-item-username {
+
+      }
+
+      .conversation-list-item-content {
+
+      }
+
+      .chat-to-gpt-conversation .conversation-list-item-content {
+          font-weight: bold;
+      }
+
+      .chat-from-gpt-conversation .conversation-list-item-content {
+          font-weight: bold;
+      }
+
+      .conversation-list-item-created-at {
+          font-size: 0.8em;
+      }
+
+      .chat-to-gpt-conversation, .chat-from-gpt-conversation {
+          border-left: red solid 3px;
+      }
+
+      /*.twenty-game-from-gpt-conversation {*/
+      /*    border-bottom: green solid 4px;*/
+      /*}*/
+
+      .myConversation {
+          background-color: lightblue;
+          /*border-color: lightblue;*/
+      }
+
+      .otherConversation {
+          background-color: lightgray;
+          /*border-color: lightgray;*/
+      }
+
+      .gptConversation {
+          background-color: lightgreen;
+          /*border-color: lightgreen;*/
+      }
+
+      .systemConversation {
+          background-color: white;
+          /*border-color: black;*/
+      }
+
 
 
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.4.0/sockjs.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
-  <script type="text/javascript">
+  <script type="text/javascript" th:inline="javascript">
+
+      /*<![CDATA[*/
+      let thCurrentMember = [[${currentMember}]];
+      /*]]>*/
 
       // STOMP 변수
       let stompClient = null;
       let currentSubscription = null;
 
-      // 가장 최근 전달된 메시지를 담는 messageDTO
-      let messageDTO = {
-          from: '',
-          text: '',
-          time: '',
-          order: '',
+      // 서버에서 내려주는 ChatMessageDto 구조. (사용X)
+      const ChatMessageDto = {
+          roomId: 0,
+          userId: 0,
           type: '',
-          isGptChat: false,
-          gptUuid: null,
+          username: '',
+          content: '',
+          createdAt: '',
+          isGptChat: false,       // Gpt 와의 대화인지 여부, 프론트에서 전달
       }
 
       document.addEventListener('DOMContentLoaded', function () {
 
           // DOM 요소 탐색
-          let fromInput = document.getElementById('from');
-          let textInput = document.getElementById('text');
+          let usernameInput = document.getElementById('usernameInput');
+          let contentInput = document.getElementById('contentInput');
           let roomData = document.getElementById('roomId');
 
           let conversationInput = document.getElementById('conversationInput');
@@ -56,55 +116,64 @@
           let activateGptBtn = document.getElementById('activateGptBtn');
           let deactivateGptBtn = document.getElementById('deActivateGptBtn');
 
-          let sendUrl = '/app/chat/' + roomData.dataset.roomid;
-          let subUrl = '/topic/chat/' + roomData.dataset.roomid;
-
           // connect init()
+          let sendUrl = '';
+          let subUrl = '';
           let currentRoomId = '';
           let currentUserId = '';
           let currentUsername = '';
 
+          // 필요시 초기화될 변수
+          let isGptOwner = false;   // gpt ACTIVATE 시킨 사람인지 여부
+          let isGptActivated = false;  // gpt ACITVATE 여부
+          let currentGptUuid = '';   // gpt uuid
+
           // 초기 Connect 호출
-          connect('chat');
+          connect();
 
           // eventListener =====================================================================================
 
           window.addEventListener("beforeunload", function (event) {
               console.log('event.beforeunload');
-              disconnect("chat");
+              disconnect();
           });
 
           memberListBtn.addEventListener('click', getMemberList);
+
           activateGptBtn.addEventListener('click', activateGpt);
           deactivateGptBtn.addEventListener('click', deActivateGpt);
+
+          contentInput.addEventListener('keypress', function (e) { if (e.key === 'Enter' && !e.shiftKey) sendMessageBtn.click(); });
+          contentInput.addEventListener('keypress', function (e) { if (e.key === 'Enter' && e.shiftKey && isGptActivated) sendGptMessageBtn.click(); });
+
           sendMessageBtn.addEventListener('click', sendMessage.bind(null, 'CHAT'));
           sendGptMessageBtn.addEventListener('click', sendMessage.bind(null, 'CHAT_TO_GPT'));
+
           unSubscribeBtn.addEventListener('click', unSubscribe);
-          document.getElementById('definedTwentyGameSubject').addEventListener('change', changeCustomTwentyGameSubjectDisabled);
-          document.getElementById('twentyGameStartBtn').addEventListener('click', sendTwentyGameStart);
 
           // function ===============================================================================================
 
           // connect 전 상태 초기화
-          function init() {
-              currentUsername = fromInput.value;
-              currentUserId = fromInput.dataset.userid;
+          function connectInit() {
+              currentUsername = usernameInput.value;
+              currentUserId = document.getElementById('userId').value;
               currentRoomId = roomData.dataset.roomid;
 
               sendUrl = '/app/chat/' + currentRoomId;
               subUrl = '/topic/chat/' + currentRoomId;
+
           }
 
           // 소켓 연결
           function connect() {
 
-              init();
+              connectInit();
 
               // 소켓연결
               let socket = new SockJS('/chat');
 
               // STOMP 연결
-              let headers = setHeaders('connect');
+              let headers = setConnectHeaders();
               stompClient = Stomp.over(socket);
 
               stompClient.connect(headers, function (frame) {
@@ -112,19 +181,10 @@
                   console.log('Connected: ' + frame);
 
                   // 서버의 endpoint 에 연결
-                  currentSubscription = stompClient.subscribe(subUrl, function (messageOutput) {
+                  currentSubscription = stompClient.subscribe(subUrl, function (responseMessageDto) {
                       // 서버로부터 메시지를 받으면 실행하는 콜백
-                      let responseBody = JSON.parse(messageOutput.body)
-                      messageDTO = responseBody;
-                      console.log("messageDTO = \n", messageDTO);
-
-                      if (responseBody.type == 'GPT_ENTER' || responseBody.type == 'GPT_LEAVE' || responseBody.type == 'CHAT_FROM_GPT') {
-                          // GPT 로부터 온 메시지
-                          processGptMessage(responseBody);
-                      } else {
-                          // 유저 or SYSTEM 으로 부터 온 메시지
-                          processMessage(responseBody)
-                      }
+                      let responseMessage = JSON.parse(responseMessageDto.body)
+                      processMessage(responseMessage);
                   });
               });
           }
@@ -138,7 +198,7 @@
 
           function disconnect() {
               if (stompClient != null) {
-                  stompClient.disconnect(function () {}, setHeaders('disconnect'));
+                  stompClient.disconnect(function () {});
               }
               setConnected(false);
               console.log("Disconnected");
@@ -153,88 +213,69 @@
 
           /**
            * 메시지의 header 설정하는 함수
-           * 현재 헤더는 simpSessionAttribute 로 등록하기 위해 사용중.
-           * @param type (stompClient. "send" or "connect")
-           * @returns headers (stomp native headers)
            */
-          function setHeaders(type) {
-              let headers = {};
-              if (type == 'connect') {
-                  // stompClient.connect() 에서 사용하는 헤더
-                  headers = {
-                      "containsNativeHeader": true,
-                      "headerType" : "connect",
-                      "currentUsername": currentUsername,
-                      "currentUserId": currentUserId,
-                      "currentRoomId": currentRoomId,
-                      "sendUrl": sendUrl,
-                      "subUrl": subUrl
-                  }
-              } else if (type == 'send' && messageDTO.isGptChat) {
-                  // stompClient.send() 에서, GPT 메시지 전송시 사용하는 헤더
-                  headers = {
-                      "containsNativeHeader": true,
-                      "headerType" : "send",
-                      "gptUuid": messageDTO.gptUuid
-                  }
-              } else if (type == 'disconnect' && messageDTO.isGptChat) {
-                  // stompClient.disconnect() 에서, GPT 종료를 위해 전달하는 헤더 (activate 후 바로 disconnect)
-                  headers = {
-                      "containsNativeHeader": true,
-                      "headerType" : "disconnect",
-                      "gptUuid": messageDTO.gptUuid
-                  }
+          function setConnectHeaders() {
+              let headers = {
+                  "containsNativeHeader": true,
+                  "currentRoomId": currentRoomId,
+                  "subUrl": subUrl
               }
-
               return headers;
           }
 
-          // 메시지 전송
           function sendMessage(chatMessageType) {
-              let fromVal = fromInput.value;
-              let textVal = textInput.value;
-              let order = document.getElementById('order');
-              let orderVal = order.value;
-              let isGptChat = chatMessageType == 'CHAT_TO_GPT' || chatMessageType == 'ACTIVATE_GPT' || chatMessageType == 'DEACTIVATE_GPT';
-              let gptUuid = messageDTO.gptUuid == null ? null : messageDTO.gptUuid;
-              // let timeNow = 일단 프론트에서 보내지 않음.
-              let chatMessage = {
-                  'type': chatMessageType, 'from': fromVal, 'text': textVal,
-                  'order': orderVal,
-                  'isGptChat': isGptChat, 'gptUuid': gptUuid
-              };
+              let usernameVal = usernameInput.value;
+              let contentVal = contentInput.value;
+              let isGptChat = chatMessageType == 'ACTIVATE_GPT' ||
+              chatMessageType == 'CHAT_TO_GPT'
+                  ? true : false;
 
-              stompClient.send(sendUrl, setHeaders('send'), JSON.stringify(chatMessage));
-              order.value = orderVal += 1;
+              let sendMessageDto = {
+                  'roomId': thCurrentMember.roomId,
+                  'userId': thCurrentMember.userId,
+                  'type': chatMessageType,
+                  'username': usernameVal,
+                  'content': contentVal,
+                  'createdAt': '',
+                  'isGptChat': isGptChat,       // Gpt 와의 대화인지 여부, 프론트에서 전달
+
+                  'gptUuid': currentGptUuid,            // GPT 의 UUID, UUID(8)
+
+              }
+              // headers = {}
+              stompClient.send(sendUrl, {}, JSON.stringify(sendMessageDto));
           }
 
           // GPT 메시지 수신 처리
-          function processGptMessage(chatMessage) {
-              // process 메시지 삭제
-              document.querySelectorAll('.gpt-type-PROCESSING').forEach(item => item.remove());
+          function processMessage(responseMessage) {
+              // GPT_PROCESSING 메시지 삭제
+              document.querySelectorAll('.gpt-processing').forEach(item => item.remove());
 
+              let needShowMessage = true;
               // 타입처리
-              switch (chatMessage.type) {
+              switch (responseMessage.type) {
+                  case 'ACTIVATE_GPT':
+                      isGptActivated = true;
+                      isGptOwner = responseMessage.userId == currentUserId ? true : false;
+                      isGptOwner ? activateGptBtn.disabled = true : activateGptBtn.disabled = false;
+                      currentGptUuid = responseMessage.gptUuid;
+
+                      needShowMessage = false;
+                      break;
                   case 'GPT_ENTER':
                       sendGptMessageBtn.style.display = 'block';
-                      fetch('/chat/room/' + currentRoomId + '/gpt-owner-check').then((response) => response.json()).then((data) => {
-                          console.log("data : ", data);
-                          let isGptOwner = data.isGptOwner;
-                          if (isGptOwner) {
-                              deactivateGptBtn.disabled = false;
-                          } else {
-                              deactivateGptBtn.disabled = true;
-                          }
-                      });
+                      sendGptMessageBtn.disabled = false;
                       break;
                   case 'GPT_LEAVE':
+                      currentGptUuid = '';
+
                       sendGptMessageBtn.style.display = 'none';
                       break;
                   case 'GPT_PROCESSING':
                       // gpt 답변 생성중
                       sendGptMessageBtn.disabled = true;
                       break;
-                  case 'CHAT_FORM_GPT':
+                  case 'CHAT_FROM_GPT':
                       // gpt 답변 생성 완료
                       sendGptMessageBtn.style.display = 'block'; // 중간에 들어온 사람이 있을 수 있으므로, 다시 보이게 처리
                       sendGptMessageBtn.disabled = false;
@@ -244,21 +285,67 @@
                   default:
                       break;
               }
-              showMessage(chatMessage);
-          }
-
-          // 일반 메시지 수신 처리
-          function processMessage(chatMessage) {
-              showMessage(chatMessage);
+              if (needShowMessage) showMessage(responseMessage);
           }
 
           // 메시지 화면 출력
           function showMessage(chatMessage) {
+              // <li> <span username> <span content> <span createdAt> </li>
               let listItem = document.createElement('li');
-              listItem.classList.add('list-group-item', 'type-' + chatMessage.type, 'gpt-type-' + chatMessage.gptType);
-              listItem.textContent = chatMessage.from + ": " + chatMessage.text + " (" + convertTime(chatMessage.time) + ")";
+              let username = document.createElement('span');
+              let content = document.createElement('span');
+              let createdAt = document.createElement('span');
+
+              let colorClassName = determineConversationColorClass(chatMessage.username);
+              let conversationHighlightClassName = determineConversationTwentyHighlightClass(chatMessage.type);
+
+              if (chatMessage.type == 'GPT_PROCESSING') listItem.classList.add('gpt-processing');
+              listItem.classList.add('list-group-item', 'conversation-list-item', colorClassName, conversationHighlightClassName);
+
+              username.textContent = chatMessage.username + ": ";
+              username.classList.add('conversation-list-item-username');
+              listItem.appendChild(username)
+
+              content.textContent = chatMessage.content;
+              content.classList.add('conversation-list-item-content');
+              listItem.appendChild(content)
+
+              createdAt.textContent = " (" + convertTime(chatMessage.createdAt) + ")";
+              createdAt.classList.add('conversation-list-item-created-at');
+
+              listItem.appendChild(createdAt);
               conversationList.appendChild(listItem);
-              textInput.value = '';
+
+              contentInput.value = '';
+          }
+
+          function determineConversationColorClass(username) {
+              let className = "";
+              if (username == 'assistant') {
+                  className = "gptConversation";
+              } else if (username == 'SYSTEM') {
+                  className = "systemConversation";
+              } else if (username == currentUsername) {
+                  className = "myConversation";
+              } else {
+                  // 다른 user
+                  className = "otherConversation";
+              }
+              return className;
+          }
+
+          /**
+           * GPT 질문 메시지의 강조색상 클래스 결정
+           */
+          function determineConversationTwentyHighlightClass(messageType) {
+              let className = "none";
+              if (messageType == 'CHAT_TO_GPT') {
+                  className = "chat-to-gpt-conversation"
+              }
+              if (messageType == 'CHAT_FROM_GPT') {
+                  className = "chat-from-gpt-conversation"
+              }
+              return className;
           }
 
           function convertTime(time) {
@@ -289,11 +376,12 @@
                       console.log(data);
                       let memberList = data.memberList;
                       let memberListStr = '';
+
                       for (let i = 0; i < memberList.length; i++) {
                           // console.log(memberList[i].username);
                           memberListStr += memberList[i].username + '(' + (memberList[i].isRoomConnected ? 'Active' : "inActive") + ')' + ', ';
                       }
-                      console.log(memberListStr);
+
                       document.getElementById("memberList").innerHTML = memberListStr;
                   });
           }
@@ -304,41 +392,6 @@
 
           function deActivateGpt() {
               sendMessage('DEACTIVATE_GPT');
-          }
-
-          // #definedTwentyGameSubject 의 값이 "custom" 으로 변경될 때 마다 #customTwentyGameSubject 의 disabled 속성을 변경
-          function changeCustomTwentyGameSubjectDisabled() {
-              let definedTwentyGameSubject = document.getElementById("definedTwentyGameSubject");
-              let customTwentyGameSubject = document.getElementById("customTwentyGameSubject");
-              if (definedTwentyGameSubject.value === "custom") {
-                  customTwentyGameSubject.disabled = false;
-              } else {
-                  customTwentyGameSubject.disabled = true;
-              }
-          }
-
-          function sendTwentyGameStart() {
-              let definedTwentyGameSubject = document.getElementById("definedTwentyGameSubject").value;
-              let customTwentyGameSubject = document.getElementById("customTwentyGameSubject").value;
-              twentyGameDto = {
-                  definedSubject: definedTwentyGameSubject,
-                  customSubject: customTwentyGameSubject
-              };
-
-              fetch('/chat/room/' + currentRoomId + '/twenty-game-start', {
-                  method: 'POST',
-                  headers: {
-                      'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify(twentyGameDto),
-              })
-                  .then(response => response.json())
-                  .then(data => {
-                      console.log('Success:', data);
-                  })
-                  .catch((error) => {
-                      console.error('Error:', error);
-                  });
           }
 
       }); // DOMContentLoaded
@@ -367,37 +420,6 @@
     <button id="unSubscribeChatBtn" class="btn btn-secondary" disabled='true'>Unsubscribe</button>
     <button id="activateGptBtn" class="btn btn-primary">activate gpt</button>
     <button id="deActivateGptBtn" class="btn btn-secondary">deActivateGpt gpt</button>
-    <!-- 모달 트리거 -->
-    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#staticBackdrop">
-      스무고개 게임
-    </button>
-  </div>
-
-
-  <!-- Modal -->
-  <div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h1 class="modal-title fs-5" id="staticBackdropLabel">스무고개 게임 시작 설정</h1>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <label for="definedTwentyGameSubject">주제 선택</label>
-          <select id="definedTwentyGameSubject" name="subject" class="form-select">
-            <option value="custom" selected>직접입력</option>
-            <option value="food">음식</option>
-            <option value="job">직업</option>
-          </select>
-          <label for="customTwentyGameSubject">주제 직접 입력</label>
-          <input id="customTwentyGameSubject" type="text" class="form-control">
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
-          <button type="button" id="twentyGameStartBtn" class="btn btn-primary">게임 시작</button>
-        </div>
-      </div>
-    </div>
   </div>
 
   <hr>
@@ -413,12 +435,10 @@
   <form id="conversationInput" class="input-group" sec:authorize="isAuthenticated()">
     <div class="input-group">
       <input type="text" id="blockSubmit" style="display: none"/>
-      <input type="text" id="text" class="form-control" placeholder="Write a chatMessage..." value=""/>
-      <input type="hidden" id="from" th:value="${#authentication.name}"
-             th:data-userid="${#authentication.principal.id}"/>
+      <input type="text" id="contentInput" class="form-control" placeholder="Write a chatMessage..." value=""/>
+      <input type="hidden" id="usernameInput" th:value="${#authentication.name}"/>
       <input type="hidden" id="order" value="0"/>
       <input type="hidden" id="userId" th:value="${#authentication.principal.id}">
-      <!--    <input type="hidden" id="type" value="CHAT"/>-->
       <div class="input-group-append">
         <button type="button" id="sendMessageBtn" class="btn btn-primary">Send</button>
       </div>

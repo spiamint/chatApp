@@ -9,11 +9,10 @@ import lombok.Getter;
 public class TwentyGameOrderNotValidException extends RuntimeException{
 
     private Long roomId;
-    private Long userId;
+    private int order; // 현재 Exception 을 발생시킨 순서
 
-    public TwentyGameOrderNotValidException(String message, Long roomId, Long userId) {
+    public TwentyGameOrderNotValidException(String message, int order) {
         super(message);
-        this.roomId = roomId;
-        this.userId = userId;
+        this.order = order;
     }
 }

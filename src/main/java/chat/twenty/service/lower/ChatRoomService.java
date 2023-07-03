@@ -1,7 +1,6 @@
 package chat.twenty.service.lower;
 
 import chat.twenty.domain.ChatRoom;
-import chat.twenty.mapper.ChatroomMapper;
 import chat.twenty.repository.ChatRoomRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,10 +36,10 @@ public class ChatRoomService {
     }
 
     /**
-     * 스무고개 순서 + 1
+     * 스무고개 순서 업데이트
      */
-    public boolean proceedNextTwentyOrder(Long id) {
-        return repository.updateTwentyNext(id);
+    public boolean updateNextTwentyOrder(Long id, int twentyNext) {
+        return repository.updateTwentyNext(id, twentyNext);
     }
 
     /**

@@ -1,20 +1,21 @@
 package chat.twenty.service;
 
-import chat.twenty.domain.ChatMessage;
-import chat.twenty.domain.RoomMember;
+import chat.twenty.dto.TwentyMessageDto;
 import chat.twenty.enums.ChatMessageType;
 import chat.twenty.exception.TwentyGameOrderNotValidException;
-import chat.twenty.service.lower.ChatMessageService;
+import chat.twenty.service.gpt.CustomGptService;
 import chat.twenty.service.lower.ChatRoomService;
 import chat.twenty.service.lower.RoomMemberService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.Map;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 /**
- * 다른 서비스를 이용하는 상위 서비스
+ * 스무고개 기능 관련  상위 서비스
  */
 @Service
 @Slf4j
@@ -23,7 +24,6 @@ public class TwentyGameService {
 
     private final RoomMemberService memberService;
     private final ChatRoomService roomService;
-    private final ChatMessageService messageService;
     private final CustomGptService gptService;
 
     public boolean readyGame(Long roomId, Long userId) {
@@ -42,59 +42,46 @@ public class TwentyGameService {
         return memberCount == readyMemberCount;
     }
 
-    public Map<String, Object> proceedGame(int twentyOrder, RoomMember member, ChatMessage chatMessage) {
-        ChatMessage gptResponse;
+    /**
+     * 시작 검증후, 게임 시작
+     * TWENTY_GAME_START
+     */
+    public TwentyMessageDto confirmGameStart(TwentyMessageDto twentyMessageDto) {
+        // 순서결정용 배열 생성
+        Integer[] orderArray = makeOrderArray(twentyMessageDto.getRoomId());
+        // GPT 활성화 처리 및 uuid 획득
+        String gptUuid = gptService.activateGpt(twentyMessageDto.getRoomId(), twentyMessageDto.getUserId());
 
-        if (twentyOrder == -1) {
-            // TWENTY_GAME_START 일때 twentyOrder == -1, 기존 order 초기화 및 검증 + 진행생략
-            resetOrder(member.getRoomId());
-            gptResponse = gptService.sendGptTwentyRequest(chatMessage.getType(), member);
-            return Map.of("gptResponse", gptResponse,
-                    "nextOrder", 0);
-        }
-
-        // 순서 검증
-        roomService.findById(member.getRoomId()).getTwentyNext();
-        validateOrder(member, twentyOrder);
-
-        // GPT 질의
-        gptResponse = gptService.sendGptTwentyRequest(chatMessage.getType(), member);
-        
-        // 순서 진행 (DB 질의 줄일수 있음)
-        int playerCount = memberService.countTwentyReadyMemberByRoomId(member.getRoomId());
-        int nextOrder = proceedToNextOrder(member.getRoomId());
-        nextOrder = nextOrder < playerCount ? nextOrder : resetOrder(member.getRoomId());
-        log.info("proceedGame() nextOrder = {}", nextOrder);
-
-        // 정답 검증 및 정답처리
-        if (validateAnswer(gptResponse.getContent())) {
-            log.info("proceedGame() validate Answer true, roomId = {}, userId = {}, content = {}",
-                    member.getRoomId(), member.getUserId(), gptResponse.getContent());
-            gptResponse.setType(ChatMessageType.TWENTY_GAME_END);
-            finishGame(member.getRoomId());
-        };
-
-        return Map.of("gptResponse", gptResponse,
-                "nextOrder", nextOrder);
-    }
-
-    protected boolean validateOrder(RoomMember member, int order) {
-        Long roomId = member.getRoomId();
-        Long userId = member.getUserId();
-        if (roomService.findById(roomId).getTwentyNext() == order) {
-            log.info("validateOrder() order is valid, order = " + order + " roomId = " + roomId + " userId = " + userId);
-            return true;
-        } else {
-            throw new TwentyGameOrderNotValidException("TwentyGameService.validateOrder() order is not valid, order = " + order + " roomId = " + roomId, roomId, userId);
-        }
+        twentyMessageDto.setOrderArray(orderArray);
+        twentyMessageDto.setGptUuid(gptUuid);
+        return twentyMessageDto;
     }
 
     /**
-     * 스무고개 순서 진행 후 다음 순서를 반환
+     * 스무고개 순서 배정용 배열 생성 및 반환
+     * TWENTY_GAME_START
      */
-    protected int proceedToNextOrder(long roomId) {
-        roomService.proceedNextTwentyOrder(roomId);
-        return roomService.findById(roomId).getTwentyNext();
+    protected Integer[] makeOrderArray(Long roomId) {
+        Integer[] orderArray = new Integer[memberService.countTwentyReadyMemberByRoomId(roomId)];
+        for (int i = 0; i < orderArray.length; i++) {
+            orderArray[i] = i;
+        }
+
+        List<Integer> orderList = Arrays.asList(orderArray);
+        Collections.shuffle(orderList);
+
+        orderArray = orderList.toArray(new Integer[orderList.size()]); // Object[] -> Integer[]
+        return orderArray;
+    }
+
+    public TwentyMessageDto proceedStart(Long roomId) {
+        // TWENTY_GAME_START 일때 currentOrder == -1, 기존 order 초기화 및 검증
+        resetOrder(roomId);
+
+        TwentyMessageDto gptRespMessage = gptService.sendGptTwentyRequest(roomId);
+        gptRespMessage.setTwentyNext(0);
+
+        return gptRespMessage;
     }
 
     /**
@@ -105,11 +92,63 @@ public class TwentyGameService {
         return 0;
     }
 
-    public boolean validateAnswer(String gptResponse) {
+    public TwentyMessageDto proceedGame(Long roomId, int currentOrder) {
+
+        // 순서 검증
+        validateOrder(roomId, currentOrder);
+
+        // GPT 질의
+        TwentyMessageDto gptRespMessage = gptService.sendGptTwentyRequest(roomId);
+
+        // 순서 진행
+        int nextOrder = proceedOrder(roomId, currentOrder);
+        gptRespMessage.setTwentyNext(nextOrder);
+
+
+        log.info("proceedGame() nextOrder = {}", nextOrder);
+        return gptRespMessage;
+    }
+
+    protected boolean validateOrder(Long roomId, int currentOrder) {
+        if (roomService.findById(roomId).getTwentyNext() == currentOrder) {
+            log.info("validateOrder() currentOrder is valid, currentOrder = " + currentOrder + " roomId = " + roomId);
+            return true;
+        } else {
+            throw new TwentyGameOrderNotValidException("TwentyGameService.validateOrder() currentOrder is not valid," +
+                    " currentOrder = " + currentOrder + " roomId = " + roomId, currentOrder);
+        }
+    }
+
+    /**
+     * 스무고개 순서 진행 후 다음 순서를 반환
+     */
+    protected int proceedOrder(long roomId, int currentOrder) {
+        int playerCount = memberService.countTwentyReadyMemberByRoomId(roomId);
+
+        // 다음순서는 현재순서 + 1 이며, 이 순서가 전체유저 수 보다 크면 0으로 돌아감.
+        int nextOrder = ++currentOrder < playerCount ? currentOrder : 0;
+
+        roomService.updateNextTwentyOrder(roomId, nextOrder);
+        return roomService.findById(roomId).getTwentyNext();
+    }
+
+    protected boolean validateAnswer(String gptResponse) {
         return gptResponse.contains("##");
     }
 
-    public void finishGame(long roomId) {
+    public TwentyMessageDto proceedAnswer(Long roomId, String username, TwentyMessageDto gptRespMessage) {
+        log.info("proceedGame() validate Answer true, roomId = {}, content = {}", roomId, gptRespMessage.getContent());
+        finishGame(roomId);
+
+        gptRespMessage.setType(ChatMessageType.TWENTY_GAME_END);
+        gptRespMessage.setTwentyWinner(username);
+
+        return gptRespMessage;
+    }
+
+    protected void finishGame(long roomId) {
+        resetOrder(roomId);
+
         memberService.findIsTwentyReadyMemberByRoomId(roomId).forEach(member -> {
             memberService.twentyUnready(roomId, member.getUserId()); // 모든 유저 ready 해제
             roomService.updateGptActivated(roomId, false); // gptActivated 초기화

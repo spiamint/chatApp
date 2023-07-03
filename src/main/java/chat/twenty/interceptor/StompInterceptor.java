@@ -3,13 +3,9 @@ package chat.twenty.interceptor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
-import org.springframework.messaging.simp.SimpMessageType;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
-import org.springframework.messaging.support.MessageBuilder;
-import org.springframework.scheduling.annotation.Async;
 
-import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -49,36 +45,19 @@ public class StompInterceptor implements ChannelInterceptor {
         // message.headers
         StompHeaderAccessor accessor = StompHeaderAccessor.wrap(message);
 
+        // connect() 할때 simpSessionAttributes 에 roomId, subUrl 저장
         Boolean containsNativeHeader = Boolean.valueOf(accessor.getFirstNativeHeader("containsNativeHeader"));
-        String headerType = accessor.getFirstNativeHeader("headerType");
         if (containsNativeHeader) {
-            switch (headerType) {
-                case "connect": // stompClient.connect() 에서 보낸 헤더
-                    // 접속 정보를 simpSessionAttributes 에 저장
-                    Map<String, String> attributeMap = Map.of(
-                            "currentUsername", accessor.getFirstNativeHeader("currentUsername"),
-                            "currentUserId", accessor.getFirstNativeHeader("currentUserId"),
-                            "currentRoomId", accessor.getFirstNativeHeader("currentRoomId"),
-                            "subUrl", accessor.getFirstNativeHeader("subUrl")
-                    );
-                    accessor.getSessionAttributes().putAll(attributeMap);
-                    break;
-                case "send": // stompClient.send() 에서 보낸 헤더
-                    // gpt 활성화시 생성된 gptUuid 를 simpSessionAttributes 에 저장
-                    accessor.getSessionAttributes().put("gptUuid", accessor.getFirstNativeHeader("gptUuid"));
-                    break;
-                case "disconnect": // stompClient.disconnect() 에서 보낸 헤더
-                    // gpt 활성화시 생성된 gptUuid 를 simpSessionAttributes 에 저장 (activate 후 바로 disconnect 할때 처리)
-                    accessor.getSessionAttributes().put("gptUuid", accessor.getFirstNativeHeader("gptUuid"));
-                    break;
-                default:
-                    break;
-            }
+            Map<String, String> attributeMap = Map.of(
+                    "roomId", accessor.getFirstNativeHeader("currentRoomId"),
+                    "subUrl", accessor.getFirstNativeHeader("subUrl")
+            );
+            accessor.getSessionAttributes().putAll(attributeMap);
         }
-
-        // 조작한 header 로 message 재생성
-        Message<?> resultMessage = MessageBuilder.createMessage(message.getPayload(), accessor.getMessageHeaders());
-        log.info("preSend() result  = {}", resultMessage);
-        return resultMessage;
+//
+//        // 조작한 header 로 message 재생성
+//        Message<?> resultMessage = MessageBuilder.createMessage(message.getPayload(), accessor.getMessageHeaders());
+//        log.info("preSend() result  = {}", resultMessage);
+        return message;
     }
 }

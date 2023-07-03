@@ -26,7 +26,7 @@
     </update>
 
     <update id="updateTwentyNext">
-        UPDATE CHAT_ROOM SET twenty_next = twenty_next + 1 WHERE id = #{id}
+        UPDATE CHAT_ROOM SET twenty_next = #{twentyNext} WHERE id = #{id}
     </update>
 
     <update id="updateTwentyNextToZero">

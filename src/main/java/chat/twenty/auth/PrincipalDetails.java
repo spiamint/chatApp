@@ -1,10 +1,9 @@
 package chat.twenty.auth;
 
 import chat.twenty.domain.User;
-
-import lombok.Data;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -14,7 +13,7 @@ import java.util.Collection;
 import java.util.Map;
 
 @Slf4j
-@Getter
+@Getter @ToString
 @RequiredArgsConstructor
 /**
  * SpringSecurity 일반 유저와 OAuth2 유저 정보를 모두 담을수 있는 클래스.

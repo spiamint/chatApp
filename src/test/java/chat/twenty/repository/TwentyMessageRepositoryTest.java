@@ -1,6 +1,5 @@
 package chat.twenty.repository;
 
-import chat.twenty.domain.ChatMessage;
 import chat.twenty.domain.TwentyMessage;
 import chat.twenty.enums.ChatMessageType;
 import lombok.extern.slf4j.Slf4j;
@@ -27,12 +26,11 @@ class TwentyMessageRepositoryTest {
     void init() {
         // roomId 1L 2L, userId 1L, 2L 은 사전에 DB 에 존재.
         testTwentyMessageList = List.of(
-                new TwentyMessage(1L, 1L, ChatMessageType.CHAT, "testMessage r1 u1"),
-                new TwentyMessage(1L, 2L, ChatMessageType.CHAT, "testMessage r1 u2"),
-                new TwentyMessage(2L, 1L, ChatMessageType.CHAT, "testMessage r2 u1"),
-                new TwentyMessage(2L, 2L, ChatMessageType.CHAT, "testMessage r2 u2")
-        );
-    }
+                TwentyMessage.builder().roomId(1L).userId(1L).type(ChatMessageType.CHAT).content("testMessage r1 u1").build(),
+                TwentyMessage.builder().roomId(1L).userId(2L).type(ChatMessageType.CHAT).content("testMessage r1 u2").build(),
+                TwentyMessage.builder().roomId(2L).userId(1L).type(ChatMessageType.CHAT).content("testMessage r2 u1").build(),
+                TwentyMessage.builder().roomId(2L).userId(2L).type(ChatMessageType.CHAT).content("testMessage r2 u2").build()
+        );    }
 
     @Test
     void saveAndFindById() {

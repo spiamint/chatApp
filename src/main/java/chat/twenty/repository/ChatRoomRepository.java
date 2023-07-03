@@ -40,8 +40,8 @@ public class ChatRoomRepository {
     /**
      * 스무고개 다음 순서 업데이트
      */
-    public boolean updateTwentyNext(Long id) {
-        return roomMapper.updateTwentyNext(id) == 1;
+    public boolean updateTwentyNext(Long id, int twentyNext) {
+        return roomMapper.updateTwentyNext(id, twentyNext) == 1;
     }
 
     /**

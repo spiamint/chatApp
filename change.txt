@@ -7,3 +7,11 @@ master commit 1
 
 master commit 2
     TwentyMessage 및 mapper, service, repo 추가와 테스트
+
+master commit 3
+    채팅처리 리팩토링. (DtoProcessor 추가 및 컨트롤러 수정, ChattingService 분리작성.)
+    GPT 처리 리팩토링 (비동기 및 GPT 자체 예외처리 추가. 서비스 수정)
+    메시지 도메인 / DTO 재설계 및 DtoMapper 통합. GptType 삭제, ChatMessageType 으로 일원화.
+    Socket 이벤트 관련 커스텀 이벤트 작성 및 이벤트 리스너 분리.
+        Stomp 헤더 및 SimpSessionAttribute 에서 사용자 정보 제거 및 SpringSecurity 사용자 정보 사용.
+    뷰 수정.

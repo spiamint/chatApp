@@ -15,3 +15,6 @@ master commit 3
     Socket 이벤트 관련 커스텀 이벤트 작성 및 이벤트 리스너 분리.
         Stomp 헤더 및 SimpSessionAttribute 에서 사용자 정보 제거 및 SpringSecurity 사용자 정보 사용.
     뷰 수정.
+
+    master commit 3.9
+        히스토리 정리를 위해 커밋

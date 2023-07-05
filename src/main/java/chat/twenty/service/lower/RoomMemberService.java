@@ -83,6 +83,30 @@ public class RoomMemberService {
         return updateTwentyReady(roomId, userId, false) == 1;
     }
 
+    public boolean makeTwentyAlive(Long roomId, Long userId) {
+        return updateTwentyGameAlive(roomId, userId, true) == 1;
+    }
+
+    public boolean makeTwentyDead(Long roomId, Long userId) {
+        return updateTwentyGameAlive(roomId, userId, false) == 1;
+    }
+
+    /**
+     * 게임 시작때, 모든 ready 플레이어를 alive = true 상태로 만듦.
+     */
+    public boolean makeTwentyAllAlive(Long roomId) {
+        int readyPlayerCount = countTwentyReadyMemberByRoomId(roomId);
+        return updateTwentyGameAliveByRoomId(roomId, true) == readyPlayerCount;
+    }
+
+    /**
+     * 게임 종료때, 모든 ready 플레이어를 alive = false 상태로 만듦.
+     */
+    public boolean makeTwentyAllDead(Long roomId) {
+        int readyPlayerCount = countTwentyReadyMemberByRoomId(roomId);
+        return updateTwentyGameAliveByRoomId(roomId, false) == readyPlayerCount;
+    }
+
     public boolean isTwentyAllReady(Long roomId) {
         return countTwentyReadyMemberByRoomId(roomId) == countMemberByRoomId(roomId);
     }
@@ -100,6 +124,14 @@ public class RoomMemberService {
 
     protected int updateTwentyReady(Long roomId, Long userId, boolean twentyReady) {
         return repository.updateIsTwentyReady(roomId, userId, twentyReady);
+    }
+
+    protected int updateTwentyGameAlive(Long roomId, Long userId, boolean twentyGameAlive) {
+        return repository.updateIsTwentyAlive(roomId, userId, twentyGameAlive);
+    }
+
+    protected int updateTwentyGameAliveByRoomId(Long roomId, boolean twentyGameAlive) {
+        return repository.updateIsTwentyAliveByRoomId(roomId, twentyGameAlive);
     }
 
     protected void delete(Long roomId, Long userId) {

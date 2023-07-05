@@ -91,4 +91,9 @@ public class IndexController {
         }
     }
 
+    @GetMapping("/ex")
+    public String example() {
+        return "example";
+    }
+
 }

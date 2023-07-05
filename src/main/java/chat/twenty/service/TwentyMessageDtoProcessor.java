@@ -43,6 +43,10 @@ public class TwentyMessageDtoProcessor {
                 // 게임 시작 검증 성공
                 twentyMessageDto = twentyService.confirmGameStart(twentyMessageDto);
                 break;
+            case TWENTY_GAME_SKIP:
+                // order 처리만, validateAlive 에서 걸려서 SKIP 메시지 반환
+                TwentyMessageDto twentySkipMessage = twentyService.proceedGame(roomId, userId, twentyMessageDto.getOrder());
+                return twentySkipMessage; // SKIP 메시지는 DB 처리X
             default:
                 log.info("Twenty preProcessMessage switch default case, messageType = {}", messageType);
                 break;
@@ -62,6 +66,7 @@ public class TwentyMessageDtoProcessor {
     public TwentyMessageDto processGpt(TwentyMessageDto twentyMessageDto) {
         TwentyMessageDto resultTwentyMessageDto = null;
         Long roomId = twentyMessageDto.getRoomId();
+        Long userId = twentyMessageDto.getUserId();
 
         ChatMessageType messageType = twentyMessageDto.getType();
         log.info("START processGPT() TwentyMessageDto = {}", twentyMessageDto);
@@ -71,14 +76,10 @@ public class TwentyMessageDtoProcessor {
                 resultTwentyMessageDto = twentyService.proceedStart(roomId);
                 break;
             case TWENTY_GAME_ASK:
-                TwentyMessageDto resultProceedGame = twentyService.proceedGame(roomId, twentyMessageDto.getOrder());
-
-                // 정답 판별 및 처리
-                if (twentyService.validateAnswer(resultProceedGame.getContent())) {
-                    resultTwentyMessageDto = twentyService.proceedAnswer(roomId, twentyMessageDto.getUsername(), resultProceedGame);
-                } else {
-                    resultTwentyMessageDto = resultProceedGame;
-                }
+                resultTwentyMessageDto = twentyService.proceedGame(roomId, userId, twentyMessageDto.getOrder());
+                break;
+            case TWENTY_GAME_ANSWER:
+                resultTwentyMessageDto = twentyService.proceedAnswer(roomId, twentyMessageDto);
                 break;
             default:
                 log.info("TwentyMessage processGpt switch default case, messageType = {}", messageType);

@@ -28,8 +28,9 @@ public class ChatMessageDto {
     private boolean isGptChat;      // Gpt 와의 대화인지 여부, 프론트에서 전달
     private String gptUuid;         // GPT 의 UUID, UUID(8)
 
-    public static ChatMessageDto createSubscribeMessage(String username) {
+    public static ChatMessageDto createSubscribeMessage(Long userId, String username) {
         ChatMessageDto chatMessageDto = new ChatMessageDto();
+        chatMessageDto.setUserId(userId); // 프론트 에서 처리할때 필요
         chatMessageDto.setUsername("SYSTEM");
         chatMessageDto.setContent(username + " 님이 입장하셨습니다.");
         chatMessageDto.setCreatedAt(LocalDateTime.now().withNano(0));
@@ -37,17 +38,19 @@ public class ChatMessageDto {
         return chatMessageDto;
     }
 
-    public static ChatMessageDto createDisconnectMessage(String username) {
+    public static ChatMessageDto createDisconnectMessage(Long userId, String username) {
         ChatMessageDto chatMessageDto = new ChatMessageDto();
+        chatMessageDto.setUserId(userId); // 프론트 에서 처리할때 필요
         chatMessageDto.setUsername("SYSTEM");
-        chatMessageDto.setContent(username + " 님이 퇴장하셨습니다.");
+        chatMessageDto.setContent(username + " 님이 접속종료 하였습니다.");
         chatMessageDto.setCreatedAt(LocalDateTime.now().withNano(0));
         chatMessageDto.setType(ChatMessageType.LEAVE);
         return chatMessageDto;
     }
 
-    public static ChatMessageDto createUnsubscribeMessage(String username) {
+    public static ChatMessageDto createUnsubscribeMessage(Long userId, String username) {
         ChatMessageDto chatMessageDto = new ChatMessageDto();
+        chatMessageDto.setUserId(userId); // 프론트 에서 처리할때 필요
         chatMessageDto.setUsername("SYSTEM");
         chatMessageDto.setContent(username + " 님이 퇴장하셨습니다.");
         chatMessageDto.setCreatedAt(LocalDateTime.now().withNano(0));

@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 @ControllerAdvice
 @RequiredArgsConstructor
 @Slf4j
-public class GlobalExceptionHandler {
+public class TwentyGameExceptionHandler {
 
     private final SimpMessagingTemplate messageTemplate;
 
@@ -25,6 +25,18 @@ public class GlobalExceptionHandler {
         twentyMessageDto.setContent(" 님 순서를 지켜주세요");
 
         messageTemplate.convertAndSend("/topic/twenty-game/" + e.getRoomId(), twentyMessageDto);
+    }
+
+    @MessageExceptionHandler(TwentyGameAliveNotValidException.class)
+    public void handleTwentyGameAliveNotValidException(TwentyGameAliveNotValidException e) {
+        log.info("handleTwentyGameOrderNotValidException() e = {}, e.roomId = {}", e, e.getMember());
+
+        TwentyMessageDto twentyMessageDto = new TwentyMessageDto();
+        twentyMessageDto.setType(ChatMessageType.TWENTY_GAME_ERROR);
+        twentyMessageDto.setUserId(e.getMember().getUserId()); // 죽은 유저의 id
+        twentyMessageDto.setContent(" 님 부정 질문");
+
+        messageTemplate.convertAndSend("/topic/twenty-game/" + e.getMember().getRoomId(), twentyMessageDto);
     }
 
 }

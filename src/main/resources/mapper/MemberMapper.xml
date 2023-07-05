@@ -62,6 +62,14 @@
         UPDATE ROOM_MEMBER SET is_twenty_game_ready = #{isTwentyGameReady} WHERE room_id = #{roomId} and user_id = #{userId}
     </update>
 
+    <update id="updateIsTwentyAlive">
+        UPDATE ROOM_MEMBER SET is_twenty_alive = #{isTwentyAlive} WHERE room_id = #{roomId} and user_id = #{userId}
+    </update>
+
+    <update id="updateIsTwentyAliveByRoomId">
+        UPDATE ROOM_MEMBER SET is_twenty_alive = #{isTwentyAlive} WHERE room_id = #{roomId} and is_twenty_game_ready = true;
+    </update>
+
     <update id="updateGptUuid">
         UPDATE ROOM_MEMBER SET gpt_uuid = #{gptUuid} WHERE room_id = #{roomId} and user_id = #{userId}
     </update>

@@ -37,8 +37,9 @@ public class TwentyWebSocketEventListener {
     }
 
     @EventListener
-    public void webSocketSubscribeListener(TwentySubscribeEvent event) {
-        TwentyMessageDto twentyMessageDto = TwentyMessageDto.createSubscribeMessage(event.getUser().getUsername());
+    public void webSocketSubscribeListener(TwentySubscribeEvent event) throws InterruptedException {
+        Thread.sleep(100); // 메시지 씹힘 방지를 위해 0.1초 대기
+        TwentyMessageDto twentyMessageDto = TwentyMessageDto.createSubscribeMessage(event.getUser().getId(), event.getUser().getUsername());
 
         // ConnectEvent 에서 입장메시지를 보내면, Subscribe 전에 보내서 씹히는 경우가 있다.
         messagingTemplate.convertAndSend("/topic/twenty-game/" + event.getRoomId(), twentyMessageDto);
@@ -54,7 +55,7 @@ public class TwentyWebSocketEventListener {
         memberService.updateRoomConnected(roomId, user.getId(), false);
         memberService.twentyUnready(roomId, user.getId());
 
-        TwentyMessageDto twentyMessageDto = TwentyMessageDto.createDisconnectMessage(user.getUsername());
+        TwentyMessageDto twentyMessageDto = TwentyMessageDto.createDisconnectMessage(event.getUser().getId(), user.getUsername());
         messagingTemplate.convertAndSend("/topic/twenty-game/" + roomId, twentyMessageDto);
 
     }
@@ -68,7 +69,7 @@ public class TwentyWebSocketEventListener {
         // 현재 접속한 사용자가 채팅방에서 나감
         memberService.leaveRoom(roomId, user.getId());
 
-        TwentyMessageDto twentyMessageDto = TwentyMessageDto.createUnsubscribeMessage(user.getUsername());
+        TwentyMessageDto twentyMessageDto = TwentyMessageDto.createUnsubscribeMessage(user.getId(), user.getUsername());
         messagingTemplate.convertAndSend("/topic/twenty-game" + roomId, twentyMessageDto);
     }
 

@@ -84,6 +84,21 @@ public class RoomMemberRepository {
         return memberMapper.updateIsTwentyGameReady(roomId, userId, twentyGameReady);
     }
 
+    /**
+     * 플레이어 개인의 실시간 alive 상태 업데이트용
+     */
+    public int updateIsTwentyAlive(Long roomId, Long userId, boolean twentyGameAlive) {
+        return memberMapper.updateIsTwentyAlive(roomId, userId, twentyGameAlive);
+    }
+
+    /**
+     * 게임의 시작과 끝 모든 ready 플레이어의 alive 상태 업데이트용.
+     * START updateReady 의 후행, END updateReady 의 선행 실행.
+     */
+    public int updateIsTwentyAliveByRoomId(Long roomId, boolean twentyGameAlive) {
+        return memberMapper.updateIsTwentyAliveByRoomId(roomId, twentyGameAlive);
+    }
+
     public void updateGptUuid(Long roomId, Long userId, String gptUuid) {
         memberMapper.updateGptUuid(roomId, userId, gptUuid);
     }

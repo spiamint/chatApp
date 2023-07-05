@@ -18,7 +18,7 @@ public class TwentyMessageDto {
     private ChatMessageType type = ChatMessageType.NONE;
     private String username;
     private String content;
-    private LocalDateTime createdAt;
+    private LocalDateTime createdAt; 
     @JsonProperty("isGptChat") // gptChat 으로 내부사용되는듯? DtoMapper 참조
     private boolean isGptChat;      // Gpt 와의 대화인지 여부, 프론트에서 전달
     private String gptUuid;         // GPT 의 UUID, UUID(8)
@@ -31,9 +31,11 @@ public class TwentyMessageDto {
     private int order;      // 진행시, user 자신의 순서
     private int twentyNext;         // 진행 시, gpt 가 내려주는 다음 순서
     private String twentyWinner;   //  종료 시, 승자의 username
+    private Long twentyDeadUserId;   // 오답 시 오답 유저의 userId
 
-    public static TwentyMessageDto createSubscribeMessage(String username) {
+    public static TwentyMessageDto createSubscribeMessage(Long userId, String username) {
         TwentyMessageDto twentyMessageDto = new TwentyMessageDto();
+        twentyMessageDto.setUserId(userId);
         twentyMessageDto.setUsername("SYSTEM");
         twentyMessageDto.setContent(username + " 님이 입장하셨습니다.");
         twentyMessageDto.setCreatedAt(LocalDateTime.now().withNano(0));
@@ -41,17 +43,19 @@ public class TwentyMessageDto {
         return twentyMessageDto;
     }
 
-    public static TwentyMessageDto createDisconnectMessage(String username) {
+    public static TwentyMessageDto createDisconnectMessage(Long userId, String username) {
         TwentyMessageDto twentyMessageDto = new TwentyMessageDto();
+        twentyMessageDto.setUserId(userId);
         twentyMessageDto.setUsername("SYSTEM");
-        twentyMessageDto.setContent(username + " 님이 퇴장하셨습니다.");
+        twentyMessageDto.setContent(username + " 님이 접속종료 하셨습니다.");
         twentyMessageDto.setCreatedAt(LocalDateTime.now().withNano(0));
         twentyMessageDto.setType(ChatMessageType.LEAVE);
         return twentyMessageDto;
     }
 
-    public static TwentyMessageDto createUnsubscribeMessage(String username) {
+    public static TwentyMessageDto createUnsubscribeMessage(Long userId, String username) {
         TwentyMessageDto twentyMessageDto = new TwentyMessageDto();
+        twentyMessageDto.setUserId(userId);
         twentyMessageDto.setUsername("SYSTEM");
         twentyMessageDto.setContent(username + " 님이 퇴장하셨습니다.");
         twentyMessageDto.setCreatedAt(LocalDateTime.now().withNano(0));
@@ -85,8 +89,16 @@ public class TwentyMessageDto {
         gptAnswerMessage.setUsername(UserType.GPT.username);
         gptAnswerMessage.setType(ChatMessageType.TWENTY_FROM_GPT);
         gptAnswerMessage.setGptChat(true);
-
+        // 시간은 DB 저장시 초기화
         return gptAnswerMessage;
+    }
+
+    public static TwentyMessageDto createTwentySkipMessage(Long roomId, Long userId) {
+        TwentyMessageDto twentySkipMessage = new TwentyMessageDto();
+        twentySkipMessage.setType(ChatMessageType.TWENTY_GAME_SKIP);
+        twentySkipMessage.setRoomId(roomId);
+        twentySkipMessage.setUserId(userId);
+        return twentySkipMessage;
     }
 
 }

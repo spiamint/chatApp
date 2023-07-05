@@ -40,6 +40,8 @@ public class CustomGptService {
     private final ChatRoomService roomService;
     private final ChatMessageService chatMessageService;
     private final TwentyMessageService twentyMessageService;
+    private boolean ok = true;
+    private String answer;
 
     /**
      * Member 와 Chatroom 에서 gpt 활성화, 활성화된 gpt 의 UUID 반환
@@ -105,7 +107,7 @@ public class CustomGptService {
         String gptUuid = memberService.findGptUuidByRoomId(roomId);
         // 게임 주제 획득
         ChatRoom findRoom = roomService.findById(roomId);
-        String subject = findRoom.getSubject() == TwentyGameSubject.CUSTOM ? findRoom.getSubject().getSubjectName() : findRoom.getCustomSubject();
+        String subject = findRoom.getSubject() == TwentyGameSubject.CUSTOM ? findRoom.getCustomSubject() : findRoom.getSubject().getSubjectName();
 
         // roomId 와 gptUuid 를 기반으로, 현재 gpt 와의 채팅목록 조회
         List<TwentyMessage> twentyMessageList = twentyMessageService.findCurrentGptQueue(roomId, gptUuid);
@@ -142,7 +144,10 @@ public class CustomGptService {
                 firstMessage.setGptPrompt(GptPrompt.CHAT_PROMPT.prompt);
                 break;
             case TWENTY_GAME_START:
-                firstMessage.setGptPrompt(GptPrompt.TWENTY_PROMPT.setSubject(replaceParam));
+                TwentyGameSubject subject = roomService.findById(firstMessage.getRoomId()).getSubject();
+                answer = ok ? TwentyGameAnswer.getRandomAnswer(subject) : answer;
+                if (ok) {ok = false;}
+                firstMessage.setGptPrompt(GptPrompt.TWENTY_PROMPT.setTwentyPrompt(replaceParam, answer));
                 break;
         }
     }
@@ -190,7 +195,6 @@ public class CustomGptService {
      * @param gptRequestMessageList : 요청 MultiChatMessage 리스트
      * @return
      */
-    @Async
     protected String askMultiChatGpt(String gptUuid, List<MultiChatMessage> gptRequestMessageList) {
 //        log.info("askMultiChatGpt() gptRequestMessageList = {}", gptRequestMessageList);
         String gptResponse = ""; // GPT 답변

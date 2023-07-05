@@ -40,8 +40,9 @@ public class ChatWebSocketEventListener {
     }
 
     @EventListener
-    public void webSocketSubscribeListener(ChatSubscribeEvent event) {
-        ChatMessageDto chatMessageDto = ChatMessageDto.createSubscribeMessage(event.getUser().getUsername());
+    public void webSocketSubscribeListener(ChatSubscribeEvent event) throws InterruptedException {
+        Thread.sleep(100); // 메시지 씹힘 방지를 위해 0.1초 대기
+        ChatMessageDto chatMessageDto = ChatMessageDto.createSubscribeMessage(event.getUser().getId(), event.getUser().getUsername());
         // ConnectEvent 에서 입장메시지를 보내면, Subscribe 전에 보내서 씹히는 경우가 있다.
         messagingTemplate.convertAndSend("/topic/chat/" + event.getRoomId(), chatMessageDto);
     }
@@ -65,8 +66,8 @@ public class ChatWebSocketEventListener {
             messagingTemplate.convertAndSend("/topic/chat/" + roomId, gptLeaveMessage);
         }
 
-        ChatMessageDto chatMessageDto = ChatMessageDto.createDisconnectMessage(event.getUser().getUsername());
-        messagingTemplate.convertAndSend("/topic/chat" + roomId, chatMessageDto);
+        ChatMessageDto chatMessageDto = ChatMessageDto.createDisconnectMessage(userId, event.getUser().getUsername());
+        messagingTemplate.convertAndSend("/topic/chat/" + roomId, chatMessageDto);
 
         // =================
 
@@ -75,11 +76,22 @@ public class ChatWebSocketEventListener {
     // 사용자가 직접 Unsubscribe 버튼 클릭하면 발생 한다. 이후 Disconnect 요청이 발생할 수있다(수정바람)
     @EventListener
     public void WebSocketUnsubscribeListener(ChatUnsubscribeEvent event) {
-        // 현재 접속한 사용자가 채팅방에서 나감
-        memberService.leaveRoom(event.getRoomId(), event.getUser().getId());
+        Long userId = event.getUser().getId();
+        Long roomId = event.getRoomId();
+        RoomMember currentMember = memberService.findById(roomId, userId);
 
-        ChatMessageDto chatMessageDto = ChatMessageDto.createUnsubscribeMessage(event.getUser().getUsername());
-        messagingTemplate.convertAndSend("/topic/chat" + event.getRoomId(), chatMessageDto);
+        // 현재 접속한 사용자가 gptOwner 이면, gpt 비활성화
+        if (currentMember.isGptOwner()) {
+            gptService.deActivateGpt(roomId, userId);
+            ChatMessageDto gptLeaveMessage = ChatMessageDto.createGptLeaveMessage();
+            messagingTemplate.convertAndSend("/topic/chat/" + roomId, gptLeaveMessage);
+        }
+
+        // 현재 접속한 사용자가 채팅방에서 나감
+        memberService.leaveRoom(roomId, userId);
+
+        ChatMessageDto chatMessageDto = ChatMessageDto.createUnsubscribeMessage(userId, event.getUser().getUsername());
+        messagingTemplate.convertAndSend("/topic/chat/" + roomId, chatMessageDto);
     }
 
 }

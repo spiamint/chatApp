@@ -1,5 +1,6 @@
 package chat.twenty.service;
 
+import chat.twenty.domain.RoomMember;
 import chat.twenty.dto.TwentyMessageDto;
 import chat.twenty.enums.ChatMessageType;
 import chat.twenty.exception.TwentyGameOrderNotValidException;
@@ -51,6 +52,8 @@ public class TwentyGameService {
         Integer[] orderArray = makeOrderArray(twentyMessageDto.getRoomId());
         // GPT 활성화 처리 및 uuid 획득
         String gptUuid = gptService.activateGpt(twentyMessageDto.getRoomId(), twentyMessageDto.getUserId());
+        // 모든 플레이어 alive 처리
+        memberService.makeTwentyAllAlive(twentyMessageDto.getRoomId());
 
         twentyMessageDto.setOrderArray(orderArray);
         twentyMessageDto.setGptUuid(gptUuid);
@@ -92,18 +95,23 @@ public class TwentyGameService {
         return 0;
     }
 
-    public TwentyMessageDto proceedGame(Long roomId, int currentOrder) {
+    public TwentyMessageDto proceedGame(Long roomId, Long userId, int currentOrder) {
 
         // 순서 검증
         validateOrder(roomId, currentOrder);
 
-        // GPT 질의
-        TwentyMessageDto gptRespMessage = gptService.sendGptTwentyRequest(roomId);
-
         // 순서 진행
         int nextOrder = proceedOrder(roomId, currentOrder);
-        gptRespMessage.setTwentyNext(nextOrder);
 
+        // 플레이어 alive 검증
+        if (!validateAlive(roomId, userId)) {
+            // 순서는 진행되나, GPT 질의 관련 처리는 되지 않음.
+            return TwentyMessageDto.createTwentySkipMessage(roomId, userId);
+        }
+
+        // GPT 질의
+        TwentyMessageDto gptRespMessage = gptService.sendGptTwentyRequest(roomId);
+        gptRespMessage.setTwentyNext(nextOrder);
 
         log.info("proceedGame() nextOrder = {}", nextOrder);
         return gptRespMessage;
@@ -116,6 +124,16 @@ public class TwentyGameService {
         } else {
             throw new TwentyGameOrderNotValidException("TwentyGameService.validateOrder() currentOrder is not valid," +
                     " currentOrder = " + currentOrder + " roomId = " + roomId, currentOrder);
+        }
+    }
+
+    protected boolean validateAlive(Long roomId, Long userId) {
+        RoomMember findMember = memberService.findById(roomId, userId);
+        log.info("validateAlive() userId = " + userId + " roomId = " + roomId + "isAlive = " + findMember.isTwentyAlive());
+        if (findMember.isTwentyAlive()) {
+            return true;
+        } else {
+            return false;
         }
     }
 
@@ -136,12 +154,23 @@ public class TwentyGameService {
         return gptResponse.contains("##");
     }
 
-    public TwentyMessageDto proceedAnswer(Long roomId, String username, TwentyMessageDto gptRespMessage) {
-        log.info("proceedGame() validate Answer true, roomId = {}, content = {}", roomId, gptRespMessage.getContent());
-        finishGame(roomId);
+    public TwentyMessageDto proceedAnswer(Long roomId, TwentyMessageDto twentyMessageDto) {
+        // 게임 진행후 GPT 질의 까지는 동일
+        TwentyMessageDto gptRespMessage = proceedGame(roomId, twentyMessageDto.getUserId(), twentyMessageDto.getTwentyNext());
+        // 정답인지 검증
+        boolean isAnswer = validateAnswer(gptRespMessage.getContent());
+        log.info("proceedAnswer() inputContent = {} gptRespMessage.getContent() = {}", twentyMessageDto.getContent() , gptRespMessage.getContent());
 
-        gptRespMessage.setType(ChatMessageType.TWENTY_GAME_END);
-        gptRespMessage.setTwentyWinner(username);
+        if (isAnswer) {
+            // 정답 처리
+            finishGame(roomId);
+            gptRespMessage.setType(ChatMessageType.TWENTY_GAME_END);
+            gptRespMessage.setTwentyWinner(twentyMessageDto.getUsername());
+        } else {
+            // 오답처리
+            memberService.makeTwentyDead(roomId, twentyMessageDto.getUserId());
+            gptRespMessage.setTwentyDeadUserId(twentyMessageDto.getUserId());
+        }
 
         return gptRespMessage;
     }
@@ -150,6 +179,7 @@ public class TwentyGameService {
         resetOrder(roomId);
 
         memberService.findIsTwentyReadyMemberByRoomId(roomId).forEach(member -> {
+            memberService.makeTwentyAllAlive(roomId); // 모든 유저 alive 처리
             memberService.twentyUnready(roomId, member.getUserId()); // 모든 유저 ready 해제
             roomService.updateGptActivated(roomId, false); // gptActivated 초기화
             memberService.updateGptUuid(roomId, member.getUserId(), null); // gptUuid 초기화

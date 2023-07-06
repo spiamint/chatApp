@@ -43,10 +43,9 @@ public class TwentyMessageDtoProcessor {
                 // 게임 시작 검증 성공
                 twentyMessageDto = twentyService.confirmGameStart(twentyMessageDto);
                 break;
-            case TWENTY_GAME_SKIP:
-                // order 처리만, validateAlive 에서 걸려서 SKIP 메시지 반환
-                TwentyMessageDto twentySkipMessage = twentyService.proceedGame(roomId, userId, twentyMessageDto.getOrder());
-                return twentySkipMessage; // SKIP 메시지는 DB 처리X
+            case LEAVE_WHILE_PLAYING:
+                twentyMessageDto = twentyService.proceedAbort(twentyMessageDto);
+                break;
             default:
                 log.info("Twenty preProcessMessage switch default case, messageType = {}", messageType);
                 break;

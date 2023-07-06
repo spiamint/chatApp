@@ -83,11 +83,12 @@ public class IndexController {
 
         if (currentRoomType == ChatRoomType.CHAT) {
             return "room/chatRoom";
-        } else if (currentRoomType == ChatRoomType.TWENTY_GAME) {
+        } else if (currentRoomType == ChatRoomType.TWENTY_GAME && !currentRoom.isGptActivated()) {
+            // 스무고개방이고, 게임중이 아닐때만 입장
             return "room/twentyGameRoom";
         } else {
             log.info("enterRoom error, roomId = {}, currentRoomType = {}", roomId, currentRoomType);
-            return "index";
+            return "redirect:/";
         }
     }
 

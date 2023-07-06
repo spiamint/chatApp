@@ -16,12 +16,13 @@ public enum ChatMessageType {
         GPT_ENTER, GPT_LEAVE,      // GPT 퇴장
 
         // TWENTY
-        TWENTY_GAME_READY, TWENTY_GAME_UNREADY, TWENTY_GAME_SKIP, TWENTY_GAME_END,  TWENTY_FROM_GPT, // 스무고개, GPT 후처리 x
+        TWENTY_GAME_READY, TWENTY_GAME_UNREADY, TWENTY_GAME_END,  TWENTY_FROM_GPT, // 스무고개, GPT 후처리 x
         TWENTY_GAME_START, TWENTY_GAME_ASK, TWENTY_GAME_ANSWER, // 스무고개, GPT 후처리 필요
-        TWENTY_GAME_ERROR,          // 스무고개 게임 에러
+        TWENTY_GAME_ERROR, LEAVE_WHILE_PLAYING,         // 스무고개 게임 에러, 게임중 퇴장
 
         // SYSTEM
-        SYSTEM, NONE;        // 시스템
+        SYSTEM, NONE, ROOM_DELETED       // 시스템
+        ;
 
 
         /**

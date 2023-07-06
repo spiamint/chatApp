@@ -1,12 +1,15 @@
 package chat.twenty.event.eventlistener.socket;
 
+import chat.twenty.domain.RoomMember;
 import chat.twenty.domain.User;
 import chat.twenty.dto.TwentyMessageDto;
 import chat.twenty.event.TwentyConnectEvent;
 import chat.twenty.event.TwentyDisconnectEvent;
 import chat.twenty.event.TwentySubscribeEvent;
 import chat.twenty.event.TwentyUnsubscribeEvent;
+import chat.twenty.service.lower.ChatRoomService;
 import chat.twenty.service.lower.RoomMemberService;
+import chat.twenty.service.lower.TwentyMemberInfoService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -23,6 +26,8 @@ public class TwentyWebSocketEventListener {
 
     private final SimpMessagingTemplate messagingTemplate;
     private final RoomMemberService memberService;
+    private final ChatRoomService roomService;
+    private final TwentyMemberInfoService memberInfoService;
 
     @EventListener
     public void webSocketConnectListener(TwentyConnectEvent event) {
@@ -51,9 +56,19 @@ public class TwentyWebSocketEventListener {
         User user = event.getUser();
         Long roomId = event.getRoomId();
 
+        RoomMember currentMember = memberService.findById(roomId, user.getId());
+        if (currentMember == null) {
+            return; /* Unsubscribe 에서 이미 나감 처리된 유저 */
+        }
+
         // 현재 접속한 사용자를 채팅방에서 connected false
         memberService.updateRoomConnected(roomId, user.getId(), false);
         memberService.twentyUnready(roomId, user.getId());
+
+        // 게임중에 나가면, MemberInfo 삭제
+        if (roomService.findById(roomId).isGptActivated()) {
+            memberInfoService.deleteByUserId(user.getId());
+        }
 
         TwentyMessageDto twentyMessageDto = TwentyMessageDto.createDisconnectMessage(event.getUser().getId(), user.getUsername());
         messagingTemplate.convertAndSend("/topic/twenty-game/" + roomId, twentyMessageDto);
@@ -66,11 +81,22 @@ public class TwentyWebSocketEventListener {
         User user = event.getUser();
         Long roomId = event.getRoomId();
 
+        // 나간사람이 방장일때
+        if (memberService.findById(roomId, user.getId()).isRoomOwner()) {
+            memberService.leaveRoomAllMember(roomId); // 방의 모든 member 삭제
+            roomService.deleteById(roomId); // 방 삭제
+            // 메시지는 일단 삭제하지 않음.
+            TwentyMessageDto deleteRoomMessageDto = TwentyMessageDto.createRoomDeleteMessage();
+            messagingTemplate.convertAndSend("/topic/twenty-game/" + roomId, deleteRoomMessageDto);
+            return;
+        }
+
         // 현재 접속한 사용자가 채팅방에서 나감
         memberService.leaveRoom(roomId, user.getId());
 
         TwentyMessageDto twentyMessageDto = TwentyMessageDto.createUnsubscribeMessage(user.getId(), user.getUsername());
-        messagingTemplate.convertAndSend("/topic/twenty-game" + roomId, twentyMessageDto);
+        messagingTemplate.convertAndSend("/topic/twenty-game/" + roomId, twentyMessageDto);
+
     }
 
 }

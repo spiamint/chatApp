@@ -1,11 +1,13 @@
 package chat.twenty.dto;
 
+import chat.twenty.domain.TwentyMemberInfo;
 import chat.twenty.domain.UserType;
 import chat.twenty.enums.ChatMessageType;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * Front-Back 간에 메시지 주고받는 DTO
@@ -26,12 +28,12 @@ public class TwentyMessageDto {
     // ====== DTO ONLY ========
     @JsonProperty("isTwentyStart")
     private boolean isTwentyStart;     // 시작시, 시작성공여부
-    private Integer[] orderArray;   // 시작시, 순서 정하기 위해 섞은 배열
 
     private int order;      // 진행시, user 자신의 순서
     private int twentyNext;         // 진행 시, gpt 가 내려주는 다음 순서
     private String twentyWinner;   //  종료 시, 승자의 username
     private Long twentyDeadUserId;   // 오답 시 오답 유저의 userId
+    private List<TwentyMemberInfo> memberInfoList; // 스무고개 Member 상태(순서) 초기화용 리스트
 
     public static TwentyMessageDto createSubscribeMessage(Long userId, String username) {
         TwentyMessageDto twentyMessageDto = new TwentyMessageDto();
@@ -93,12 +95,10 @@ public class TwentyMessageDto {
         return gptAnswerMessage;
     }
 
-    public static TwentyMessageDto createTwentySkipMessage(Long roomId, Long userId) {
-        TwentyMessageDto twentySkipMessage = new TwentyMessageDto();
-        twentySkipMessage.setType(ChatMessageType.TWENTY_GAME_SKIP);
-        twentySkipMessage.setRoomId(roomId);
-        twentySkipMessage.setUserId(userId);
-        return twentySkipMessage;
+    public static TwentyMessageDto createRoomDeleteMessage() {
+        TwentyMessageDto deleteMessage = new TwentyMessageDto();
+        deleteMessage.setType(ChatMessageType.ROOM_DELETED);
+        return deleteMessage;
     }
 
 }

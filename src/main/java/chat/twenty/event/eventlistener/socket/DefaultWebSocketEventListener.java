@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.messaging.Message;
+import org.springframework.messaging.MessageHeaders;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.stereotype.Component;
@@ -73,12 +74,14 @@ public class DefaultWebSocketEventListener {
         log.info("WebSocket DisConnect, event = {} /// message = {}", event, event.getMessage());
 
         Message<byte[]> disconnectMessage = event.getMessage();
+        MessageHeaders headers = disconnectMessage.getHeaders();
+
         String subUrl = getSubUrl(disconnectMessage);
         Long roomId = getRoomId(disconnectMessage);
 
         User currentUser = getUserFromEvent(event);
         StompWebsocketEvent nextEvent = subUrl.contains("chat") ?
-                new ChatDisconnectEvent(currentUser, roomId) : new TwentyDisconnectEvent(currentUser, roomId);
+                new ChatDisconnectEvent(currentUser, roomId) : new TwentyDisconnectEvent(headers, currentUser, roomId);
 
         eventPublisher.publishEvent(nextEvent);
     }

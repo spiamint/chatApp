@@ -27,11 +27,10 @@ public interface RoomMemberMapper {
     int updateIsRoomOwner(@Param("roomId") Long roomId, @Param("userId") Long userId, @Param("isRoomOwner") boolean isRoomOwner);
     int updateIsRoomConnected(@Param("roomId") Long roomId, @Param("userId") Long userId, @Param("isRoomConnected") boolean isRoomConnected);
     int updateIsTwentyGameReady(@Param("roomId") Long roomId, @Param("userId") Long userId, @Param("isTwentyGameReady") boolean isTwentyReady);
-    int updateIsTwentyAlive(@Param("roomId") Long roomId, @Param("userId") Long userId, @Param("isTwentyAlive") boolean isTwentyAlive);
-    int updateIsTwentyAliveByRoomId(@Param("roomId") Long roomId, @Param("isTwentyAlive") boolean isTwentyAlive);
     int updateGptUuid(@Param("roomId") Long roomId, @Param("userId") Long userId, @Param("gptUuid") String gptUuid);
 
     int deleteById(@Param("roomId") Long roomId, @Param("userId") Long userId);
+    int deleteByRoomId(@Param("roomId") Long roomId);
 
 
 }

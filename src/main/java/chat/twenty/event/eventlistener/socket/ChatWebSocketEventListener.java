@@ -3,11 +3,13 @@ package chat.twenty.event.eventlistener.socket;
 import chat.twenty.domain.RoomMember;
 import chat.twenty.domain.User;
 import chat.twenty.dto.ChatMessageDto;
+import chat.twenty.dto.TwentyMessageDto;
 import chat.twenty.event.ChatConnectEvent;
 import chat.twenty.event.ChatDisconnectEvent;
 import chat.twenty.event.ChatSubscribeEvent;
 import chat.twenty.event.ChatUnsubscribeEvent;
 import chat.twenty.service.gpt.CustomGptService;
+import chat.twenty.service.lower.ChatRoomService;
 import chat.twenty.service.lower.RoomMemberService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +28,7 @@ public class ChatWebSocketEventListener {
     private final SimpMessagingTemplate messagingTemplate;
     private final RoomMemberService memberService;
     private final CustomGptService gptService;
+    private final ChatRoomService roomService;
 
 
     @EventListener
@@ -79,6 +82,16 @@ public class ChatWebSocketEventListener {
         Long userId = event.getUser().getId();
         Long roomId = event.getRoomId();
         RoomMember currentMember = memberService.findById(roomId, userId);
+
+        // 나간사람이 방장일때
+        if(memberService.findById(roomId, userId).isRoomOwner()) {
+            memberService.leaveRoomAllMember(roomId); // 방의 모든 member 삭제
+            roomService.deleteById(roomId); // 방 삭제
+            // 메시지는 일단 삭제하지 않음.
+            TwentyMessageDto deleteRoomMessageDto = TwentyMessageDto.createRoomDeleteMessage();
+            messagingTemplate.convertAndSend("/topic/twenty-game/" + roomId, deleteRoomMessageDto);
+            return;
+        }
 
         // 현재 접속한 사용자가 gptOwner 이면, gpt 비활성화
         if (currentMember.isGptOwner()) {

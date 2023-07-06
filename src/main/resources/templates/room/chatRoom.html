@@ -31,6 +31,10 @@
           margin: 20px auto;
       }
 
+      #sendMessageBtn {
+          margin: 0 5px;
+      }
+
       #sendGptMessageBtn {
           display: none;
       }
@@ -173,6 +177,12 @@
           let currentUsername = '';
           let currentGptOwnerUsername = '';   // syncMemberList 에서 결정됨.
 
+          // thCurrentMember 로 초기화할 변수 (갱신되지 않는 변수들)
+          // thCurrentMember 는 방장이 아닌 일반유저의 경우, 방 첫 입장때 null 이다.
+          let isCurrentUserRoomOwner =
+              thCurrentMember ? thCurrentMember.isRoomOwner : false; // 내가 방장인지 여부
+          console.log("thCurrentMember = {}", thCurrentMember);
+
           // 필요시 초기화될 변수
           let isGptOwner = false;   // gpt ACTIVATE 시킨 사람인지 여부
           let isGptActivated = false;  // gpt ACITVATE 여부
@@ -215,7 +225,6 @@
 
               sendUrl = '/app/chat/' + currentRoomId;
               subUrl = '/topic/chat/' + currentRoomId;
-
           }
 
           // 소켓 연결
@@ -240,11 +249,18 @@
                       let responseMessage = JSON.parse(responseMessageDto.body)
                       processMessage(responseMessage);
                   });
+                  // 멤버리스트 초기화
+                  initializeMemberList();
               });
           }
 
           // 사용자의 구독해제
           function unSubscribe() {
+              if (isCurrentUserRoomOwner) {
+                  if (!confirm('방장이 나가면 방이 삭제됩니다. 정말 나가시겠습니까?')) {
+                      return;
+                  }
+              }
               currentSubscription.unsubscribe();
               // index 로 보냄. (뒤로가기 불가)
               location.replace('/');
@@ -302,15 +318,17 @@
           }
 
           // GPT 메시지 수신 처리
-          function processMessage(responseMessage) {
-              // GPT_PROCESSING 메시지 삭제
-              document.querySelectorAll('.gpt-processing').forEach(item => item.remove());
+          async function processMessage(responseMessage) {
               // 멤버창 갱신
-              syncMemberList(responseMessage.userId);
+              await syncMemberList(responseMessage.userId);
 
               let needShowMessage = true;
               // 타입처리
               switch (responseMessage.type) {
+                  case 'ENTER':
+                      break;
+                  case 'LEAVE':
+                      break;
                   case 'ACTIVATE_GPT': // 해당메시지의 userId = ACTIVATE_GPT 한 사람의 userId
                       // 상태처리
                       isGptActivated = true;
@@ -329,10 +347,16 @@
                       needShowMessage = false;
                       break;
                   case 'GPT_ENTER':
+                      // GPT_PROCESSING 메시지 삭제
+                      document.querySelectorAll('.gpt-processing').forEach(item => item.remove());
+
                       sendGptMessageBtn.style.display = 'block';
                       sendGptMessageBtn.disabled = false;
                       break;
                   case 'GPT_LEAVE':
+                      // GPT_PROCESSING 메시지 삭제
+                      document.querySelectorAll('.gpt-processing').forEach(item => item.remove());
+
                       // 상태처리
                       currentGptUuid = '';
 
@@ -349,14 +373,25 @@
                       // gpt 답변 생성중
                       sendGptMessageBtn.disabled = true;
                       break;
+                  case 'CHAT_TO_GPT':
+                      break;
                   case 'CHAT_FROM_GPT':
+                      // GPT_PROCESSING 메시지 삭제
+                      document.querySelectorAll('.gpt-processing').forEach(item => item.remove());
+
                       // gpt 답변 생성 완료
                       sendGptMessageBtn.style.display = 'block'; // 중간에 들어온 사람이 있을 수 있으므로, 다시 보이게 처리
                       sendGptMessageBtn.disabled = false;
                       break;
-                  case 'OFFLINE':
+                  case 'ROOM_DELETED':
+                      alert('방장에 의해 방이 삭제되었습니다.');
+                      location.replace('/');
                       break;
                   default:
+                      console.log("PROCESS MESSAGE DEFAULT CASE ============================", responseMessage);
+                      // GPT_PROCESSING 메시지 삭제 (보험)
+                      document.querySelectorAll('.gpt-processing').forEach(item => item.remove());
+                      needShowMessage = false;
                       break;
               }
               if (needShowMessage) showMessage(responseMessage);
@@ -406,7 +441,8 @@
               createdAt.classList.add('conversation-list-item-created-at');
               listBody.appendChild(createdAt);
 
-              listItem.appendChild(listHeader); listItem.appendChild(listBody);
+              listItem.appendChild(listHeader);
+              listItem.appendChild(listBody);
               conversationList.appendChild(listItem);
 
               // 스크롤 최하단으로 이동
@@ -465,56 +501,74 @@
               return formattedDateTime;
           }
 
+          function fetchMemberList() {
+              let responsePromise = fetch('/chat/room/' + currentRoomId + '/members');
+              return responsePromise.then(response => response.json()) // json 형태의 데이터를 자바스크립트 객체로 변환
+          }
+
+          /**
+           * 처음들어갈때 멤버리스트 초기화 및 생성 (한번만 실행)
+           */
+          async function initializeMemberList() {
+
+              const response = await fetchMemberList();
+              console.log(response);
+              let responseMemberList = response.memberList;
+
+              // 서버에서 받은 responseMemberList 순회
+              for (let i = 0; i < responseMemberList.length; i++) {
+                  let newMemberListItem = createMemberListItem(responseMemberList[i]);
+                  memberList.appendChild(newMemberListItem);
+              }
+          }
+
           /**
            * (메시지를 수신할때 마다) 현재 채팅방의 멤버정보를 동기화
            * @param responseMessageUserId : 수신한 메시지의 userId. 이를 통해 수정할 user 정보를 확인한다.
            */
-          function syncMemberList(responseMessageUserId) {
+          async function syncMemberList(responseMessageUserId) {
               if (responseMessageUserId == 0 || responseMessageUserId == null) return;
 
-              fetch('/chat/room/' + currentRoomId + '/members')
-                  .then(response => response.json()) // json 형태의 데이터를 자바스크립트 객체로 변환
-                  .then(data => {
-                      console.log(data);
-                      let responseMemberList = data.memberList;
+              const response = await fetchMemberList();
+              console.log(response);
+              let responseMemberList = response.memberList;
 
-                      let modifiedMemberListItem = null; // htmlCollection
-                      let modifiedMemberResponse = null; // Object
+              let modifiedMemberListItem = null; // htmlCollection
+              let modifiedMemberResponse = null; // Object
 
-                      // 파라미터로 받은 메시지의 userId 와 동일한 userId 를 가진 member-list-item 을 찾는다.
-                      for (let i = 0; i < memberList.children.length; i++) {
-                          if (memberList.children[i].dataset.userid == responseMessageUserId) {
-                              modifiedMemberListItem = memberList.children[i];
-                          }
-                      }
-                      console.log(modifiedMemberListItem);
+              // 파라미터로 받은 메시지의 userId 와 동일한 userId 를 가진 member-list-item 을 찾는다.
+              for (let i = 0; i < memberList.children.length; i++) {
+                  if (memberList.children[i].dataset.userid == responseMessageUserId) {
+                      modifiedMemberListItem = memberList.children[i];
+                  }
+              }
+              // console.log(modifiedMemberListItem);
 
-                      // 수정할 멤버의 정보를 찾는다.
-                      for (let i = 0; i < responseMemberList.length; i++) {
-                          if (responseMemberList[i].userId == responseMessageUserId) {
-                              modifiedMemberResponse = responseMemberList[i];
-                          }
-                      }
+              // 수정할 멤버의 정보를 찾는다.
+              for (let i = 0; i < responseMemberList.length; i++) {
+                  if (responseMemberList[i].userId == responseMessageUserId) {
+                      modifiedMemberResponse = responseMemberList[i];
+                  }
+              }
 
-                      // 동기화
-                      if (modifiedMemberResponse == null) {
-                          // 수정할 멤버의 정보가 없음
-                          if (modifiedMemberListItem != null) {
-                              // list-item 은 존재함 -> 삭제
-                              modifiedMemberListItem.remove();
-                          }
-                      } else {
-                          // 수정할 멤버의 정보가 있음 -> newListItem 생성
-                          let newMemberListItem = createMemberListItem(modifiedMemberResponse);
-                          if (modifiedMemberListItem == null) {
-                              // 수정할 멤버의 정보 있음, list-item 없음, -> 새 list-item 추가
-                              memberList.appendChild(newMemberListItem);
-                          } else {
-                              // 수정할 멤버의 정보 있음, list-item 있음 -> 새 list-item 으로 교체
-                              modifiedMemberListItem.replaceWith(newMemberListItem);
-                          }
-                      }
-                  });
+              // 동기화
+              if (modifiedMemberResponse == null) {
+                  // 수정할 멤버의 정보가 없음
+                  if (modifiedMemberListItem != null) {
+                      // list-item 은 존재함 -> 삭제
+                      modifiedMemberListItem.remove();
+                  }
+              } else {
+                  // 수정할 멤버의 정보가 있음 -> newListItem 생성
+                  let newMemberListItem = createMemberListItem(modifiedMemberResponse);
+                  if (modifiedMemberListItem == null) {
+                      // 수정할 멤버의 정보 있음, list-item 없음, -> 새 list-item 추가
+                      memberList.appendChild(newMemberListItem);
+                  } else {
+                      // 수정할 멤버의 정보 있음, list-item 있음 -> 새 list-item 으로 교체
+                      modifiedMemberListItem.replaceWith(newMemberListItem);
+                  }
+              }
           } // syncMemberList()
 
           /**
@@ -566,7 +620,8 @@
               sendMessage('DEACTIVATE_GPT');
           }
 
-      }); // DOMContentLoaded
+      })
+      ; // DOMContentLoaded
 
   </script>
 </head>
@@ -640,10 +695,10 @@
       <input type="hidden" id="order" value="0"/>
       <input type="hidden" id="userId" th:value="${#authentication.principal.id}">
       <div class="input-group-append">
-        <button type="button" id="sendMessageBtn" class="btn btn-primary">Send</button>
+        <button type="button" id="sendMessageBtn" class="btn btn-outline-primary">보내기</button>
       </div>
       <div class="input-group-append">
-        <button type="button" id="sendGptMessageBtn" class="btn btn-secondary">SendGpt</button>
+        <button type="button" id="sendGptMessageBtn" class="btn btn-outline-success">질문하기</button>
       </div>
     </div>
   </form>

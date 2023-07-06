@@ -1,5 +1,6 @@
 package chat.twenty.domain;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -9,10 +10,10 @@ public class RoomMember {
     private Long roomId;
     private Long userId;
     private boolean isRoomConnected;
+    @JsonProperty("isRoomOwner")
     private boolean isRoomOwner;
     private boolean isGptOwner;
     private boolean isTwentyGameReady;
-    private boolean isTwentyAlive;
 
     private String gptUuid;     // GPT activate 시의 세션구분. isGptOwner = true 일때 사용
 

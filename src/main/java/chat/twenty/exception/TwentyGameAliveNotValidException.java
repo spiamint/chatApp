@@ -1,6 +1,5 @@
 package chat.twenty.exception;
 
-import chat.twenty.domain.RoomMember;
 import lombok.Getter;
 
 /**
@@ -9,11 +8,13 @@ import lombok.Getter;
 @Getter
 public class TwentyGameAliveNotValidException extends RuntimeException {
 
-    private RoomMember member;
+    private Long roomId;
+    private Long userId;
 
-    public TwentyGameAliveNotValidException(String message, RoomMember member) {
+    public TwentyGameAliveNotValidException(String message, Long roomId, Long userId) {
         super(message);
-        this.member = member;
+        this.roomId = roomId;
+        this.userId = userId;
     }
 
 }

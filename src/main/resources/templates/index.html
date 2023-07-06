@@ -71,14 +71,22 @@
 
             // init ===========================================================
 
-            // needLogin 이 true 이면 로그인 모달을 띄움
-            if (thNeedLogin) { triggerLoginModal(); }
+            // needLogin 이 true 이고, 로그인 정보패널이 없으면 로그인 모달을 띄움
+            if (thNeedLogin && !document.querySelector('#userInfoBox')) { triggerLoginModal(); }
 
             if (thIsCreateRoomError) {
                 // 방 만들때 에러나면, 방만들기 모달에서 값이 선택될때, radio.change 이벤트 리스너가 안먹어 강제로 설정
                 changeTwentyGameOptionWrapperDisplay(document.querySelector("input[name='roomType']:checked").value);
                 triggerCreateRoomModal();
             }
+
+            document.querySelectorAll(".room-list-item").forEach((roomListItem) => {
+                // 게임중인 방 입장방지
+                if (roomListItem.querySelector(".room-list-item-is-playing")) {
+                    roomListItem.querySelector(".room-list-item-link").removeAttribute("href");
+                }
+            });
+
 
             // ================================================================
 
@@ -191,7 +199,7 @@
     <hr>
 
     <h4>session user info</h4>
-    <div sec:authorize="isAuthenticated()">
+    <div sec:authorize="isAuthenticated()" id="userInfoBox">
         <span th:text="'id : ' + ${#authentication.principal.user.id}"></span>
         <span th:text="' username : ' + ${#authentication.name}"></span>
         <span th:text="' authorities : ' + ${#authentication.authorities}"></span>
@@ -250,7 +258,7 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
-                        <button type="submit" id="twentyGameStartBtn" class="btn btn-outline-primary">게임 시작</button>
+                        <button type="submit" id="twentyGameStartBtn" class="btn btn-outline-primary">만들기</button>
                     </div>
                 </form>
             </div>
@@ -258,21 +266,14 @@
     </div>
 
     <h4>roomList</h4>
-    <ul class="list-group">
-        <li class="list-group-item d-flex justify-content-between align-items-start">
-            <div class="ms-2 me-auto">
-                <div class="fw-bold">roomName</div>
-                <span> content placeholder </span>
-            </div>
-            <span class="badge bg-primary rounded-pill">1</span>
-        </li>
-        <li class="list-group-item d-flex justify-content-between align-items-start"
+    <ul id="roomList" class="list-group">
+        <li class="list-group-item d-flex justify-content-between align-items-start room-list-item"
             th:each="room : ${roomList}">
             <div class="ms-2 me-auto">
                 <div class="fw-bold" th:text="${room.getName}">roomName</div>
-                <a th:href="@{/room/{roomId}(roomId=${room.id})}"> link </a>
+                <a class="room-list-item-link" th:href="@{/room/{roomId}(roomId=${room.id})}"> link </a>
             </div>
-            <span class="badge bg-primary rounded-pill">1</span>
+            <span class="badge bg-primary rounded-pill room-list-item-is-playing" th:if="${room.isGptActivated() && room.type == T(chat.twenty.enums.ChatRoomType).TWENTY_GAME}">게임중</span>
         </li>
     </ul>
 

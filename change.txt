@@ -17,4 +17,14 @@ master commit 3
     뷰 수정.
 
     master commit 3.9
-        히스토리 정리를 위해 커밋
+        히스토리 정리를 위해 커밋, github public 변경.
+
+master commit 4
+    방장 퇴장처리, 스무고개 게임중 유저 퇴장시 게임종료처리
+    스무고개 순서처리를 서버에서 하도록 변경. SKIP 메시지 삭제.
+    TwentyMemberInfo 추가, RoomMember 변경.
+    게임 진행중 다른 유저 입장 불가 처리.
+    프론트 멤버 동기화 부분 동기화처리. 및 버그수정.
+    GPT api key 갱신
+
+

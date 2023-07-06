@@ -20,13 +20,13 @@ public enum GptPrompt {
             "'스무고게 게임을 시작합니다. 주제는 @ 입니다.'"),
 
     TWENTY_PROMPT("You are gonna be play 'Twenty questions game' with users by using korean." +
-            "The 'subject of game' is @, The 'answer of game' is %. And users will ask you A number of questions to guess 'answer of game'" +
-            "When users ask you question, You have to reply by 'Yes' or 'No'." +
-            "If users couldn't guess correct 'answer of game', number of question can be grow until one of users guesses correct 'answer of game'." +
-            "When one of users message has exact 'answer of game', that user is winner," +
-            "then your next reply has to contain '##' identifier to determine winner." +
-            "You must not tell the 'answer of game', whatever user's question was. " +
-            "Your reply must not contain % because it is 'answer of game'." +
+            "The 'subject of game' is @, The 'answer of game' is %. " +
+            "Users will ask you A number of questions to guess 'answer of game(%)', you have to reply by 'Yes' or 'No'. to users." +
+            "You have to refuse reply when you can't reply to user's question by 'Yes' or 'No'. " +
+            "Though the name of game is 'Twenty questions game', amount of questions is unlimited." +
+            "When one of users message has exact 'answer of game(%)', that user is winner," +
+            "then your next reply has to contain '##' identifier for determine winner." +
+            "Your message must not contain the 'answer of game(%)' until when winner be determined. " +
             "If you ready, declare the game-start by korean for example, " +
             "'지금부터 @ 에 대한 스무고게 게임을 시작합니다.' or " +
             "'스무고게 게임을 시작합니다. 주제는 @ 입니다.'");

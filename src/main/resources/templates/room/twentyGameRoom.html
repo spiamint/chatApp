@@ -33,8 +33,16 @@
           display: none;
       }
 
+      #sendMessageBtn {
+          margin: 0 5px;
+      }
+
       #unReadyBtn {
           display: none;
+      }
+
+      #inputStatus {
+          margin-bottom: 7px;
       }
 
       #conversationBox {
@@ -147,7 +155,6 @@
 
           gptUuid: null,            // GPT 의 UUID, UUID(8)
           isTwentyStart: false,    // 시작시, 시작성공여부
-          orderArray: null,        // 시작시, 순서 정하기 위해 섞은 배열
           order: 0,                // 진행 시, user 자신의 순서
           twentyNext: 0,         // 진행 시, gpt 가 내려주는 다음 순서
           twentyWinner: '',          //  종료 시, 승자의 username
@@ -189,22 +196,34 @@
           let currentUserId = '';
           let currentUsername = '';
 
+          // thCurrentMember 로 초기화할 변수 (갱신되지 않는 변수들)
+          // thCurrentMember 는 방장이 아닌 일반유저의 경우, 방 첫 입장때 null 이다.
+          let isCurrentUserRoomOwner =
+              thCurrentMember ? thCurrentMember.isRoomOwner : false; // 내가 방장인지 여부
+          console.log("thCurrentMember = {}", thCurrentMember);
+          console.log("isCurrentUserRoomOwner = {}", isCurrentUserRoomOwner);
+
           // 필요시 초기화될 변수
           let readyUserCount = 0;
           let allUserCount = 0;
           let isCurrentUserReady = false;
           let isTwentyStart = false; // 서버에서 스무고개 시작 여부 확인후 전송됨
-          let orderArray = null; // 서버에서 스무고개 시작후 내려준 순서결정용 배열
-          let myMemberOrder = -1; // 멤버 순서 (syncMemberList 에서 갱신)
+
+          let playerInfoList = null; // START 에서 갱신할 플레이어 정보 리스트
           let myTwentyOrder = -1; // 스무고개 순서 (TWENTY_GAME_START 메시지 오면 갱신)
+
           let currentGptUuid; // 스무고개 START 하면 서버에서 uuid 받아서 초기화
+
           let twentyWinner;
+
           let currentQuestionCount = 0; // 메시지에 표시하기위해 작성됨
-          let remainingOrderCount; // 내 차례까지 남은 횟수. alivePlayerCount 를 대입한뒤 GPT_ANSWER 마다 1씩감소
-          // alivePlayerCount 가 -- 될때마다 얘도 --
-          let isPlaying = false; // 게임중인지 여부. TWENTY_GAME_START, TWENTY_GAME_END 에서 갱신, sync 에서 사용
-          let isCurrentUserDead = false; // 내가 오답자인지 여부. TWENTY_FROM_GPT 에서 갱신
           let alivePlayerCount = 0; // START 에서 readyUserCount 대입 후, 오답자가 나올때 마다 --
+          let remainingOrderCount; // 내 차례까지 남은 횟수. 내차례마다 alivePlayerCount 를 대입한뒤 GPT_ANSWER 마다 1씩감소
+
+          let isPlaying = false; // 게임중인지 여부. TWENTY_GAME_START, TWENTY_GAME_END 에서 갱신, sync 에서 사용
+
+          let isCurrentUserDead = false; // 내가 오답자인지 여부. TWENTY_FROM_GPT 에서 갱신
+
 
           // 초기 Connect 호출
           connect();
@@ -248,10 +267,6 @@
 
               sendUrl = '/app/twenty-game/' + currentRoomId;
               subUrl = '/topic/twenty-game/' + currentRoomId;
-
-              if (thCurrentMember != null) {
-                  if (thCurrentMember.roomOwner == true) startBtn.removeAttribute('disabled');
-              }
           }
 
           // 소켓 연결
@@ -282,12 +297,20 @@
 
 // 사용자의 구독해제
           function unSubscribe() {
+              if (isCurrentUserRoomOwner) {
+                  if (!confirm('방장이 나가면 방이 삭제됩니다. 정말 나가시겠습니까?')) {
+                      return;
+                  }
+              }
               currentSubscription.unsubscribe();
               // index 로 보냄. (뒤로가기 불가)
               location.replace('/');
           }
 
           function disconnect() {
+              if (isCurrentUserRoomOwner && isPlaying) {
+                  sendMessage('LEAVE_WHILE_PLAYING'); // 방장이면서 게임중일때 나가면 게임종료
+              }
               if (stompClient != null) {
                   stompClient.disconnect(function () {
                   });
@@ -343,7 +366,6 @@
 
                   // 클라이언트의 값은 보내는 의미가 없는 필드들
                   'isTwentyStart': isTwentyStart,    // 시작성공여부
-                  'orderArray': orderArray,        // 시작시, 순서 정하기 위해 섞은 배열
                   'twentyNext': 0,         // 진행 시, gpt 가 내려주는 다음 순서
                   'twentyWinner': '',          //  종료 시, 승자의 username
               }
@@ -361,52 +383,61 @@
           }
 
 // 메시지 수신 처리
-          function processMessage(responseMessage) {
+          async function processMessage(responseMessage) {
 
               let needShowMessage = true;
               switch (responseMessage.type) {
                   case 'ENTER':
-                      syncMemberList(isPlaying, responseMessage.userId);
+                      await syncMemberList(isPlaying, responseMessage.userId);
                       break;
 
                   case 'LEAVE':
-                      syncMemberList(isPlaying, responseMessage.userId);
+                      await syncMemberList(isPlaying, responseMessage.userId);
+                      // 게임중에 LEAVE 메시지 옴 -> 누군가 나감 -> 방장이면 에러 메시지 보내기
+                      isPlaying && isCurrentUserRoomOwner ? sendMessage('LEAVE_WHILE_PLAYING') : null;
+                      break;
+
+                  case 'CHAT':
                       break;
 
                   case 'TWENTY_GAME_READY':
                       // 상태처리
                       isCurrentUserReady = responseMessage.userId == currentUserId ? true : isCurrentUserReady;
+                      await syncMemberList(isPlaying, responseMessage.userId) // 멤버리스트 갱신 및 readyUserCount 조작
 
                       // 버튼처리
                       changeReadyBtnStyle(isCurrentUserReady);
+                      console.log(isCurrentUserRoomOwner, readyUserCount, allUserCount);
+                      startBtn.disabled = isCurrentUserRoomOwner && (readyUserCount == allUserCount) ? false : true; // 방장 && 올레디 시작버튼 사용가능
 
-                      syncMemberList(isPlaying, responseMessage.userId) // 멤버리스트 갱신
                       needShowMessage = false;
                       break;
 
                   case 'TWENTY_GAME_UNREADY':
                       // 상태처리
                       isCurrentUserReady = responseMessage.userId == currentUserId ? false : isCurrentUserReady;
+                      await syncMemberList(isPlaying, responseMessage.userId); // 멤버리스트 갱신
 
                       // 버튼처리
                       changeReadyBtnStyle(isCurrentUserReady);
+                      startBtn.disabled = isCurrentUserRoomOwner && (readyUserCount == allUserCount) ? false : true;
 
-                      syncMemberList(isPlaying, responseMessage.userId); // 멤버리스트 갱신
                       needShowMessage = false;
                       break;
 
                   case 'TWENTY_GAME_START':
-
                       // GPT_PROCESSING 메시지 삭제
                       document.querySelectorAll('.gpt-processing').forEach(item => item.remove());
+
                       // 상태처리
+                      playerInfoList = responseMessage.memberInfoList;
                       currentGptUuid = responseMessage.gptUuid;
-                      myTwentyOrder = responseMessage.orderArray[myMemberOrder];
+                      initializeOrder();
                       alivePlayerCount = readyUserCount; // 생존자 초기화
                       isPlaying = true;
 
                       // 버튼 처리
-                      disableAllMenuBtnExceptMemberList();
+                      disableAllMenuBtnExceptMemberListBtn();
                       sendGptMessageBtn.style.display = 'block';
 
                       needShowMessage = false;
@@ -417,12 +448,14 @@
                       document.querySelectorAll('.gpt-processing').forEach(item => item.remove());
 
                       // 상태처리
+                      await syncMemberList(isPlaying, responseMessage.userId)// 멤버리스트 갱신
                       isPlaying = false;
+                      isCurrentUserReady = false;
                       twentyWinner = responseMessage.twentyWinner;
-                      alert(twentyWinner + " 승리");
+                      if (twentyWinner) alert(twentyWinner + " 승리");
 
                       // 버튼처리
-                      enableAllMenuBtn();
+                      enableAllMenuBtnExceptStartBtn();
                       changeReadyBtnStyle(isCurrentUserReady);
                       sendGptMessageBtn.style.display = 'none';
 
@@ -430,7 +463,6 @@
                       inputStatus.innerText = '대기중';
                       conversationInput.classList.remove('twenty-asking-conversation-input');
 
-                      syncMemberList(isPlaying, responseMessage.userId)// 멤버리스트 갱신
                       break;
 
                   case 'TWENTY_GAME_ERROR':
@@ -440,35 +472,43 @@
                       sendGptMessageBtn.disabled = true;
                       break;
 
-                  case 'TWENTY_GAME_SKIP':
-                      // 상태처리
-                      // remainingOrderCount = responseMessage.twentyNext == myTwentyOrder ? alivePlayerCount : remainingOrderCount--;
-
-                      // 차례에 따른 후처리
-                      responseMessage.twentyNext == myTwentyOrder ? processMyTurn() : processOtherTurn();
-
-                      needShowMessage = false;
-                      break;
-
                   case 'TWENTY_FROM_GPT':
                       currentQuestionCount++; // 질문 카운트 증가
                       if (responseMessage.twentyDeadUserId) {
                           // 오답자가 존재
                           alivePlayerCount--; // 오답자로 인한 순서 보정
-                          remainingOrderCount--; // 오답자로 인한 순서 보정
+                          remainingOrderCount--;
                           // 현재 유저 오답자확인
                           isCurrentUserDead = responseMessage.twentyDeadUserId == currentUserId ? true : isCurrentUserDead; // 오답자확인
                       }
 
                       // GPT_PROCESSING 메시지 삭제
                       document.querySelectorAll('.gpt-processing').forEach(item => item.remove());
-
                       // 차례에 따른 후처리
                       responseMessage.twentyNext == myTwentyOrder ? processMyTurn() : processOtherTurn();
 
+                      break;
+                  case 'ROOM_DELETED':
+                      alert('방장에 의해 방이 삭제되었습니다.');
+                      location.replace('/');
+                      break;
+                  default:
+                      needShowMessage = false;
+                      console.log("PROCESS MESSAGE DEFAULT CASE ============================", responseMessage);
+                      // GPT_PROCESSING 메시지 삭제 (보험)
+                      document.querySelectorAll('.gpt-processing').forEach(item => item.remove());
+                      break;
               } //switch
 
               if (needShowMessage) showMessage(responseMessage);
+          }
+
+          function initializeOrder() {
+              playerInfoList.forEach((item) => {
+                  if (item.userId == currentUserId) {
+                      myTwentyOrder = item.twentyOrder;
+                  }
+              })
           }
 
           /**
@@ -477,12 +517,6 @@
           function processMyTurn() {
               // 상태처리
               remainingOrderCount = alivePlayerCount; // 내차례가 돌아오면, 남은차례 초기화
-
-              // 내가 오답자면, 상태만 처리한 후, 바로 SKIP 메시지 전송
-              if (isCurrentUserDead) {
-                  sendMessage('TWENTY_GAME_SKIP');
-                  return;
-              }
 
               // 버튼처리
               sendGptMessageBtn.disabled = false;
@@ -507,6 +541,7 @@
               if (isCurrentUserDead) {
                   // 현재 플레이어 오답자일때
                   inputStatus.innerText = '당신은 죽었습니다.';
+                  conversationInput.classList.remove('twenty-asking-conversation-input');// 질문박스 하이라이트
                   return;
               }
               conversationInput.classList.remove('twenty-asking-conversation-input');
@@ -577,11 +612,11 @@
            */
           function determineConversationTwentyHighlightClass(messageType) {
               let className = "none";
-              if (messageType == 'TWENTY_GAME_ASK') {
-                  className = "twenty-game-ask-conversation"
+              if (messageType == 'TWENTY_GAME_ASK' || messageType == 'TWENTY_GAME_ANSWER') {
+                  className = "twenty-game-ask-conversation";
               }
               if (messageType == 'TWENTY_FROM_GPT') {
-                  className = "twenty-game-from-gpt-conversation"
+                  className = "twenty-game-from-gpt-conversation";
               }
               return className;
           }
@@ -610,84 +645,84 @@
           /**
            * 처음들어갈때 멤버리스트 초기화 및 생성 (한번만 실행)
            */
-          function initializeMemberList() {
-              fetch('/twenty-game/room/' + currentRoomId + '/members')
-                  .then(response => response.json()) // json 형태의 데이터를 자바스크립트 객체로 변환
-                  .then(data => {
-                      console.log(data);
-                      let responseMemberList = data.memberList;
+          async function initializeMemberList() {
 
-                      // 서버에서 받은 responseMemberList 순회
-                      for (let i = 0; i < responseMemberList.length; i++) {
-                          let newMemberListItem = createMemberListItem(responseMemberList[i]);
-                          memberList.appendChild(newMemberListItem);
-                      }
-                  });
+              const response = await fetchMemberList();
+              console.log(response);
+              let responseMemberList = response.memberList;
+
+              allUserCount = responseMemberList.length;
+
+              // 서버에서 받은 responseMemberList 순회
+              for (let i = 0; i < responseMemberList.length; i++) {
+                  let newMemberListItem = createMemberListItem(responseMemberList[i]);
+                  memberList.appendChild(newMemberListItem);
+              }
           }
 
-          function syncMemberList(isPlaying, responseMessageUserId) {
+          async function syncMemberList(isPlaying, responseMessageUserId) {
               if (responseMessageUserId == 0 || responseMessageUserId == null) return;
 
-              fetch('/twenty-game/room/' + currentRoomId + '/members')
-                  .then(response => response.json()) // json 형태의 데이터를 자바스크립트 객체로 변환
-                  .then(data => {
-                      console.log(data);
-                      let responseMemberList = data.memberList;
+              const response = await fetchMemberList(); // 멤버리스트를 반환하는것을 대기.
 
-                      let modifiedMemberListItem = null; // htmlCollection
-                      let modifiedMemberResponse = null; // Object
-                      readyUserCount = isPlaying ? readyUserCount : 0
-                      allUserCount = memberList.length;
+              console.log(response);
+              let responseMemberList = response.memberList;
 
-                      // 파라미터로 받은 메시지의 userId 와 동일한 userId 를 가진 member-list-item 을 찾는다.
-                      for (let i = 0; i < memberList.children.length; i++) {
-                          if (memberList.children[i].dataset.userid == responseMessageUserId) {
-                              modifiedMemberListItem = memberList.children[i];
-                          }
-                      }
+              let modifiedMemberListItem = null; // htmlCollection
+              let modifiedMemberResponse = null; // Object
+              readyUserCount = isPlaying ? readyUserCount : 0
+              allUserCount = responseMemberList.length;
 
-                      console.log(modifiedMemberListItem);
+              // 파라미터로 받은 메시지의 userId 와 동일한 userId 를 가진 member-list-item 을 찾는다.
+              for (let i = 0; i < memberList.children.length; i++) {
+                  if (memberList.children[i].dataset.userid == responseMessageUserId) {
+                      modifiedMemberListItem = memberList.children[i];
+                  }
+              }
 
-                      // 서버에서 받은 responseMemberList 순회
-                      for (let i = 0; i < responseMemberList.length; i++) {
-                          // 수정할 멤버의 정보를 찾는다.
-                          if (responseMemberList[i].userId == responseMessageUserId) {
-                              modifiedMemberResponse = responseMemberList[i];
-                          }
+              console.log(modifiedMemberListItem);
 
-                          if (isPlaying) continue; // 플레이중인경우 후처리 무시
+              // 서버에서 받은 responseMemberList 순회
+              for (let i = 0; i < responseMemberList.length; i++) {
+                  // 수정할 멤버의 정보를 찾는다.
+                  if (responseMemberList[i].userId == responseMessageUserId) {
+                      modifiedMemberResponse = responseMemberList[i];
+                  }
 
-                          // ready 된 유저 수 계산
-                          readyUserCount = responseMemberList[i].isTwentyGameReady ? ++readyUserCount : readyUserCount;
+                  if (isPlaying) continue; // 플레이중인경우 후처리 무시
 
-                          // 내 순서 결정용 memberOrder 설정
-                          myMemberOrder = responseMemberList[i].userId == currentUserId ? i : myMemberOrder;
+                  // ready 된 유저 수 계산
+                  readyUserCount = responseMemberList[i].isTwentyGameReady ? ++readyUserCount : readyUserCount;
 
-                      }
+              }
 
-                      remainingOrderCount = readyUserCount; // 실 플레이 유저 수 대입 후 -- 해갈것
-                      console.log("readyUserCount : " + readyUserCount);
+              remainingOrderCount = readyUserCount; // 실 플레이 유저 수 대입 후 -- 해갈것
+              console.log("readyUserCount : " + readyUserCount);
 
-                      // 동기화
-                      if (modifiedMemberResponse == null) {
-                          // 수정할 멤버의 정보가 없음
-                          if (modifiedMemberListItem != null) {
-                              // list-item 은 존재함 -> 삭제
-                              modifiedMemberListItem.remove();
-                          }
-                      } else {
-                          // 수정할 멤버의 정보가 있음 -> newListItem 생성
-                          let newMemberListItem = createMemberListItem(modifiedMemberResponse);
-                          if (modifiedMemberListItem == null) {
-                              // 수정할 멤버의 정보 있음, list-item 없음, -> 새 list-item 추가
-                              memberList.appendChild(newMemberListItem);
-                          } else {
-                              // 수정할 멤버의 정보 있음, list-item 있음 -> 새 list-item 으로 교체
-                              modifiedMemberListItem.replaceWith(newMemberListItem);
-                          }
-                      }
-                  });
+              // 동기화
+              if (modifiedMemberResponse == null) {
+                  // 수정할 멤버의 정보가 없음
+                  if (modifiedMemberListItem != null) {
+                      // list-item 은 존재함 -> 삭제
+                      modifiedMemberListItem.remove();
+                  }
+              } else {
+                  // 수정할 멤버의 정보가 있음 -> newListItem 생성
+                  let newMemberListItem = createMemberListItem(modifiedMemberResponse);
+                  if (modifiedMemberListItem == null) {
+                      // 수정할 멤버의 정보 있음, list-item 없음, -> 새 list-item 추가
+                      memberList.appendChild(newMemberListItem);
+                  } else {
+                      // 수정할 멤버의 정보 있음, list-item 있음 -> 새 list-item 으로 교체
+                      modifiedMemberListItem.replaceWith(newMemberListItem);
+                  }
+              }
           } // syncMemberList()
+
+          function fetchMemberList() {
+              let responsePromise = fetch('/twenty-game/room/' + currentRoomId + '/members');
+              return responsePromise.then(response => response.json()) // json 형태의 데이터를 자바스크립트 객체로 변환
+          }
 
           /**
            * 수정할 멤버의 정보를 받아서, 새로운 list-item 을 생성한다.
@@ -736,9 +771,9 @@
           }
 
           /**
-           * 모든 #menuBar 내부 버튼 비활성화
+           * 멤버정보 버튼 제외 모든 #menuBar 내부 버튼 비활성화
            */
-          function disableAllMenuBtnExceptMemberList() {
+          function disableAllMenuBtnExceptMemberListBtn() {
               document.querySelectorAll('#menuBar button').forEach(function (item) {
                   item.disabled = true;
               });
@@ -746,12 +781,13 @@
           }
 
           /**
-           * 모든 #menuBar 내부 버튼 활성화
+           * 시작버튼 제외 모든 #menuBar 내부 버튼 활성화
            */
-          function enableAllMenuBtn() {
+          function enableAllMenuBtnExceptStartBtn() {
               document.querySelectorAll('#menuBar button').forEach(function (item) {
                   item.disabled = false;
               });
+              startBtn.disabled = true;
           }
 
 
@@ -810,7 +846,7 @@
       <button id="readyBtn" class="btn btn-outline-primary changeReadyBtn" data-toready="true">준비하기</button>
       <button id="unReadyBtn" class="btn btn-outline-info changeReadyBtn" data-toready="false">준비됨</button>
       <button id="startBtn" class="btn btn-outline-secondary" disabled>게임시작</button>
-      <button id="unSubscribeBtn" class="btn btn-outline-danger" disabled='true'>Unsubscribe</button>
+      <button id="unSubscribeBtn" class="btn btn-outline-danger" disabled='true'>퇴장</button>
     </div>
   </div>
 

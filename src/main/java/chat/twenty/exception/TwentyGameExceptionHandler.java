@@ -29,14 +29,14 @@ public class TwentyGameExceptionHandler {
 
     @MessageExceptionHandler(TwentyGameAliveNotValidException.class)
     public void handleTwentyGameAliveNotValidException(TwentyGameAliveNotValidException e) {
-        log.info("handleTwentyGameOrderNotValidException() e = {}, e.roomId = {}", e, e.getMember());
+        log.info("handleTwentyGameOrderNotValidException() e = {}, e.roomId = {} e.userId = {}", e, e.getRoomId(), e.getUserId());
 
         TwentyMessageDto twentyMessageDto = new TwentyMessageDto();
         twentyMessageDto.setType(ChatMessageType.TWENTY_GAME_ERROR);
-        twentyMessageDto.setUserId(e.getMember().getUserId()); // 죽은 유저의 id
+        twentyMessageDto.setUserId(e.getUserId()); // 죽은 유저의 id
         twentyMessageDto.setContent(" 님 부정 질문");
 
-        messageTemplate.convertAndSend("/topic/twenty-game/" + e.getMember().getRoomId(), twentyMessageDto);
+        messageTemplate.convertAndSend("/topic/twenty-game/" + e.getRoomId(), twentyMessageDto);
     }
 
 }

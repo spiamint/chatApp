@@ -7,36 +7,36 @@
 
     <!-- SELECT 문을 사용하여 사용자 정보 조회 -->
     <select id="findById" resultType="User">
-        SELECT * FROM USER WHERE id = #{id}
+        SELECT * FROM user WHERE id = #{id}
     </select>
 
     <!-- 로그인 -->
     <select id="findByUsername" resultType="User">
-        SELECT * FROM USER WHERE username = #{username}
+        SELECT * FROM user WHERE username = #{username}
     </select>
 
     <select id="findAll" resultType="User">
-        SELECT * FROM USER LIMIT 0, 100
+        SELECT * FROM user LIMIT 0, 100
     </select>
 
     <select id="findByLoginId" resultType="User">
-        SELECT * FROM USER WHERE login_id = #{loginId}
+        SELECT * FROM user WHERE login_id = #{loginId}
     </select>
 
     <!-- INSERT 문을 사용하여 사용자 정보 삽입 -->
     <insert id="save" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO USER (username, login_id, password, role)
+        INSERT INTO user (username, login_id, password, role)
         VALUES (#{username}, #{loginId}, #{password}, #{role})
     </insert>
 
     <!-- UPDATE 문을 사용하여 사용자 정보 수정 -->
     <update id="update">
-        UPDATE USER SET username = #{updateParam.username} WHERE id = #{id}
+        UPDATE user SET username = #{updateParam.username} WHERE id = #{id}
     </update>
 
     <!-- DELETE 문을 사용하여 사용자 정보 삭제 -->
     <delete id="deleteById">
-        DELETE FROM USER WHERE id = #{id}
+        DELETE FROM user WHERE id = #{id}
     </delete>
 
 </mapper>

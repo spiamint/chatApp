@@ -14,7 +14,7 @@ public class UserAddForm {
     @Size(max = 16)
     private String loginId;
     @NotBlank
-    @Size(max = 12)
+    @Size(max = 16)
     private String username;
     @NotBlank
     @Size(min = 4, max = 16)

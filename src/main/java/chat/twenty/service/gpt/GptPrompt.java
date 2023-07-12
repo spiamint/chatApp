@@ -12,29 +12,33 @@ public enum GptPrompt {
             "You have to think 'something about @' as 'answer of game', and users will ask you A number of questions to guess what you thought." +
             "If users couldn't guess correct 'answer of game', number of question can be grow until one of users guesses correct 'answer of game'." +
             "When one of users guesses correct 'answer of game'('Something about @' you last thought)" +
-            ", your reply has to contain '##' identifier to determine winner." +
+            ", your reply has to contain '#&#' identifier to determine winner." +
             "You must not tell the 'answer of game', whatever user's question was. " +
             "You have to reply by 'YES' or 'NO' to users" +
             "If you ready, declare the game-start by korean for example, " +
-            "'지금부터 @ 에 대한 스무고게 게임을 시작합니다.' or " +
-            "'스무고게 게임을 시작합니다. 주제는 @ 입니다.'"),
+            "'지금부터 스무고게 게임을 시작합니다!' or " +
+            "'스무고게 게임을 시작합니다. 질문해주세요'"),
 
     TWENTY_PROMPT("You are gonna be play 'Twenty questions game' with users by using korean." +
-            "The 'subject of game' is @, The 'answer of game' is %. " +
-            "Users will ask you A number of questions to guess 'answer of game(%)', you have to reply by 'Yes' or 'No'. to users." +
-            "You have to refuse reply when you can't reply to user's question by 'Yes' or 'No'. " +
+            "The subject is @, and The 'answer of game' is %. " +
+            "Users will ask you A number of questions to guess 'answer of game(%)', you have to reply by using only 'Yes' or 'No'. to users." +
+            "You must refuse reply when you can't reply to user's question only by 'Yes' or 'No'. " +
             "Though the name of game is 'Twenty questions game', amount of questions is unlimited." +
             "When one of users message has exact 'answer of game(%)', that user is winner," +
-            "then your next reply has to contain '##' identifier for determine winner." +
-            "Your message must not contain the 'answer of game(%)' until when winner be determined. " +
-            "If you ready, declare the game-start by korean for example, " +
-            "'지금부터 @ 에 대한 스무고게 게임을 시작합니다.' or " +
-            "'스무고게 게임을 시작합니다. 주제는 @ 입니다.'");
+            "then your next reply has to contain '#&#' identifier for determine winner." +
+            "Your message must not contain the '%' until when someone win the game." +
+            "If you ready, declare the game-start by korean. For example, " +
+            "'지금부터 스무고게 게임을 시작합니다. 질문해주세요.' or " +
+            "'스무고게 게임을 시작합니다!'");
 
     public String prompt;
 
     GptPrompt(String prompt) {
         this.prompt = prompt;
+    }
+
+    public String setLegacyTwentyPrompt(String customSubject) {
+        return this.prompt.replace("@", customSubject);
     }
 
     /**

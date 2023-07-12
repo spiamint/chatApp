@@ -6,35 +6,43 @@
 <mapper namespace="chat.twenty.mapper.ChatroomMapper">
 
     <select id="findById" resultType="Chatroom">
-        SELECT * FROM CHAT_ROOM WHERE id = #{id}
+        SELECT * FROM chat_room WHERE id = #{id}
     </select>
 
     <select id="findAll" resultType="Chatroom">
-        SELECT * FROM CHAT_ROOM LIMIT 0, 100
+        SELECT * FROM chat_room LIMIT 0, 100
+    </select>
+
+    <select id="findTwentyAnswerById" resultType="String">
+        SELECT twenty_answer FROM chat_room WHERE id = #{id}
     </select>
 
     <insert id="save" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO CHAT_ROOM (name, type, subject, custom_subject) VALUES (#{name}, #{type}, #{subject}, #{customSubject})
+        INSERT INTO chat_room (name, type, subject, custom_subject) VALUES (#{name}, #{type}, #{subject}, #{customSubject})
     </insert>
 
     <update id="update">
-        UPDATE CHAT_ROOM SET name = #{updateParam.name} WHERE id = #{id}
+        UPDATE chat_room SET name = #{updateParam.name} WHERE id = #{id}
     </update>
 
     <update id="updateGptActivated">
-        UPDATE CHAT_ROOM SET is_gpt_activated = #{isGptActivated} WHERE id = #{id}
+        UPDATE chat_room SET is_gpt_activated = #{isGptActivated} WHERE id = #{id}
     </update>
 
     <update id="updateTwentyNext">
-        UPDATE CHAT_ROOM SET twenty_next = #{twentyNext} WHERE id = #{id}
+        UPDATE chat_room SET twenty_next = #{twentyNext} WHERE id = #{id}
     </update>
 
     <update id="updateTwentyNextToZero">
-        UPDATE CHAT_ROOM SET twenty_next = 0 WHERE id = #{id}
+        UPDATE chat_room SET twenty_next = 0 WHERE id = #{id}
+    </update>
+
+    <update id="updateTwentyAnswer">
+        UPDATE chat_room SET twenty_answer = #{twentyAnswer} WHERE id = #{id}
     </update>
 
     <delete id="deleteById">
-        DELETE FROM CHAT_ROOM WHERE id = #{id}
+        DELETE FROM chat_room WHERE id = #{id}
     </delete>
 
 </mapper>

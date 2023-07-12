@@ -26,13 +26,13 @@ public class TwentyMemberInfoService {
         return repository.findByRoomIdAndOrder(roomId, order);
     }
 
+    public boolean isRoomAllDead(Long roomId) {
+        return repository.countByRoomIdAndIsAlive(roomId, true) == 0;
+    }
+
     public TwentyMemberInfo save(TwentyMemberInfo twentyMemberInfo) {
         repository.save(twentyMemberInfo);
         return twentyMemberInfo;
-    }
-
-    public int updateIsReady(Long userId, boolean isReady) {
-        return repository.updateIsReady(userId, isReady);
     }
 
     public int updateIsAlive(Long userId, boolean isAlive) {
@@ -55,9 +55,8 @@ public class TwentyMemberInfoService {
         return repository.updateOrder(userId, order);
     }
 
-
-    public int deleteByUserId(Long userId) {
-        return repository.delete(userId);
+    public boolean deleteByUserId(Long userId) {
+        return repository.delete(userId) == 1;
     }
 
     public int deleteByRoomId(Long roomId) {

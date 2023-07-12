@@ -44,7 +44,10 @@ public class TwentyMessageDtoProcessor {
                 twentyMessageDto = twentyService.confirmGameStart(twentyMessageDto);
                 break;
             case LEAVE_WHILE_PLAYING:
-                twentyMessageDto = twentyService.proceedAbort(twentyMessageDto);
+                twentyMessageDto = twentyService.proceedAbort(roomId, "플레이어가 나갔습니다. 게임이 종료됩니다.");
+                break;
+            case BAN_MEMBER:
+                twentyMessageDto = twentyService.banMember(twentyMessageDto.getRoomId(), twentyMessageDto.getUserId(), twentyMessageDto.getBanUserId());
                 break;
             default:
                 log.info("Twenty preProcessMessage switch default case, messageType = {}", messageType);
@@ -76,6 +79,7 @@ public class TwentyMessageDtoProcessor {
                 break;
             case TWENTY_GAME_ASK:
                 resultTwentyMessageDto = twentyService.proceedGame(roomId, userId, twentyMessageDto.getOrder());
+                resultTwentyMessageDto.setContent(resultTwentyMessageDto.getContent().replace("#&#", ""));
                 break;
             case TWENTY_GAME_ANSWER:
                 resultTwentyMessageDto = twentyService.proceedAnswer(roomId, twentyMessageDto);

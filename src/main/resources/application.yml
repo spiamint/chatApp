@@ -1,6 +1,9 @@
 spring:
   profiles:
-    include: gpt, local-db
+    active: local
+    group:
+        local: gpt, local-db
+        deploy: gpt, eb-db
   thymeleaf:
     prefix: classpath:/templates/   #spring.mvc.static-path-pattern=/static/**
   messages:

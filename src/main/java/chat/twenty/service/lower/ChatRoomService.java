@@ -22,6 +22,10 @@ public class ChatRoomService {
         return repository.findAll();
     }
 
+    public String findTwentyAnswer(Long id) {
+        return repository.findTwentyAnswerById(id);
+    }
+
     public ChatRoom save(ChatRoom chatRoom) {
         repository.save(chatRoom);
         return repository.findById(chatRoom.getId());
@@ -47,6 +51,14 @@ public class ChatRoomService {
      */
     public boolean resetTwentyOrder(Long id) {
         return repository.updateTwentyNextToZero(id);
+    }
+
+    public void setTwentyAnswer(Long id, String twentyAnswer) {
+        repository.updateTwentyAnswer(id, twentyAnswer);
+    }
+
+    public void removeTwentyAnswer(Long id) {
+        repository.updateTwentyAnswer(id, null);
     }
 
     public int deleteById(Long id) {

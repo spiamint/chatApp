@@ -83,3 +83,15 @@ dependencies {
 tasks.withType<Test> {
 	useJUnitPlatform()
 }
+
+tasks.register<Zip>("buildAwsEb") {
+	from(tasks.named<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar").get().outputs.files)
+	from(".ebextensions") {
+		into(".ebextensions")
+	}
+	from(".platform") {
+		into(".platform")
+	}
+	archiveFileName.set("myproject.zip")
+	destinationDirectory.set(project.file("build/libs"))
+}

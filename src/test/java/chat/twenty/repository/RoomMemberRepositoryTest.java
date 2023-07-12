@@ -21,17 +21,19 @@ class RoomMemberRepositoryTest {
 
     private ChatRoom testRoom;
     private User testUser;
+    private RoomMember testMember;
 
     @BeforeEach
     void initTest() {
         log.info("initTest()");
         testUser = userRepository.save(new User("memoryTestUser"));
         testRoom = roomRepository.save(new ChatRoom("memoryTestRoom"));
+        testMember = new RoomMember(testRoom.getId(), testUser.getId(), testUser.getUsername());
     }
 
     @Test
     void findRoomMember() {
-        memberRepository.save(testRoom.getId(), testUser.getId());
+        memberRepository.save(testMember);
         log.info("result = {}", memberRepository.findById(testRoom.getId(), testUser.getId()));
     }
 
@@ -43,7 +45,7 @@ class RoomMemberRepositoryTest {
 
     @Test
     void findMemberListByRoomId() {
-        memberRepository.save(testRoom.getId(), testUser.getId());
+        memberRepository.save(testMember);
         memberRepository.findMemberListByRoomId(testRoom.getId()).forEach(roomMember ->
                 log.info("result = {}", roomMember)
         );
@@ -51,7 +53,7 @@ class RoomMemberRepositoryTest {
 
     @Test
     void saveMember() {
-        RoomMember savedMember = memberRepository.save(testRoom.getId(), testUser.getId());
+        RoomMember savedMember = memberRepository.save(testMember);
         log.info("savedMember = {}", savedMember);
     }
 
@@ -62,7 +64,7 @@ class RoomMemberRepositoryTest {
 
     @Test
     void updateRoomConnected() {
-        RoomMember savedMember = memberRepository.save(testRoom.getId(), testUser.getId());
+        RoomMember savedMember = memberRepository.save(testMember);
         log.info("savedMember = {}", savedMember);
         memberRepository.updateIsRoomConnected(savedMember.getRoomId(), savedMember.getUserId(), false);
         log.info("updatedMember = {}", memberRepository.findById(savedMember.getRoomId(), savedMember.getUserId()));
@@ -70,7 +72,7 @@ class RoomMemberRepositoryTest {
 
     @Test
     void updateRoomOwner() {
-        RoomMember savedMember = memberRepository.save(testRoom.getId(), testUser.getId());
+        RoomMember savedMember = memberRepository.save(testMember);
         log.info("savedMember = {}", savedMember);
         memberRepository.updateIsRoomOwner(savedMember.getRoomId(), savedMember.getUserId(), true);
         log.info("updatedMember = {}", memberRepository.findById(savedMember.getRoomId(), savedMember.getUserId()));
@@ -78,7 +80,7 @@ class RoomMemberRepositoryTest {
 
     @Test
     void updateGptActivated() {
-        RoomMember savedMember = memberRepository.save(testRoom.getId(), testUser.getId());
+        RoomMember savedMember = memberRepository.save(testMember);
         log.info("savedMember = {}", savedMember);
         memberRepository.updateIsGptOwner(savedMember.getRoomId(), savedMember.getUserId(), true);
         log.info("updatedMember = {}", memberRepository.findById(savedMember.getRoomId(), savedMember.getUserId()));
@@ -86,7 +88,7 @@ class RoomMemberRepositoryTest {
 
     @Test
     void deleteMember() {
-        RoomMember savedMember = memberRepository.save(testRoom.getId(), testUser.getId());
+        RoomMember savedMember = memberRepository.save(testMember);
         memberRepository.deleteById(savedMember.getRoomId(), savedMember.getUserId());
         Assertions.assertThat(memberRepository.findById(savedMember.getRoomId(), savedMember.getUserId())).isNull();
     }

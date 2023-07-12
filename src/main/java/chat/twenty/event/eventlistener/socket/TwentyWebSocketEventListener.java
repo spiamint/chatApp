@@ -65,12 +65,13 @@ public class TwentyWebSocketEventListener {
         memberService.updateRoomConnected(roomId, user.getId(), false);
         memberService.twentyUnready(roomId, user.getId());
 
-        // 게임중에 나가면, MemberInfo 삭제
+        // 게임중에 나가면, MemberInfo 삭제 (disconnect 가능)
+        boolean isPlayerDeleted = false;
         if (roomService.findById(roomId).isGptActivated()) {
-            memberInfoService.deleteByUserId(user.getId());
+            isPlayerDeleted = memberInfoService.deleteByUserId(user.getId());
         }
 
-        TwentyMessageDto twentyMessageDto = TwentyMessageDto.createDisconnectMessage(event.getUser().getId(), user.getUsername());
+        TwentyMessageDto twentyMessageDto = TwentyMessageDto.createDisconnectMessage(event.getUser().getId(), user.getUsername(), isPlayerDeleted);
         messagingTemplate.convertAndSend("/topic/twenty-game/" + roomId, twentyMessageDto);
 
     }

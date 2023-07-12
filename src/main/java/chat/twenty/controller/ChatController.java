@@ -3,10 +3,7 @@ package chat.twenty.controller;
 import chat.twenty.auth.PrincipalDetails;
 import chat.twenty.domain.RoomMember;
 import chat.twenty.dto.ChatMessageDto;
-import chat.twenty.dto.UserMemberDto;
 import chat.twenty.service.ChatMessageDtoProcessor;
-import chat.twenty.service.gpt.CustomGptService;
-import chat.twenty.service.lower.ChatMessageService;
 import chat.twenty.service.lower.RoomMemberService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,9 +27,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class ChatController {
 
-    private final CustomGptService gptService;
     private final RoomMemberService memberService;
-    private final ChatMessageService chatMessageService;
 
     private final SimpMessagingTemplate messageTemplate;
     private final ChatMessageDtoProcessor chatMessageDtoProcessor;
@@ -69,7 +64,7 @@ public class ChatController {
     @GetMapping("/chat/room/{roomId}/members")
     public Map<String, Object> getMemberList(@PathVariable Long roomId) {
         log.info("getUserList() roomId = {}", roomId);
-        List<UserMemberDto> memberList = memberService.findMemberList(roomId);
+        List<RoomMember> memberList = memberService.findMemberList(roomId);
         log.info("memberList = {}", memberList);
         return Map.of("memberList", memberList);
     }

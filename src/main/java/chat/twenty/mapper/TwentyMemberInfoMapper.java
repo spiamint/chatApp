@@ -11,9 +11,9 @@ public interface TwentyMemberInfoMapper {
     TwentyMemberInfo findById(Long userId);
     List<TwentyMemberInfo> findByRoomId(Long roomId);
     TwentyMemberInfo findByRoomIdAndOrder(@Param("roomId") Long roomId, @Param("order") int order);
+    int countByRoomIdAndIsAlive(@Param("roomId") Long roomId, @Param("isAlive") boolean isAlive);
     int save(TwentyMemberInfo twentyMemberInfo);
     int update(@Param("userId") Long userId, @Param("updateParam") TwentyMemberInfo updateParam);
-    int updateIsReady(@Param("userId") Long userId, @Param("isReady") boolean isReady);
     int updateIsAlive(@Param("userId") Long userId, @Param("isAlive") boolean isAlive);
     int updateIsAliveAll(@Param("roomId") Long roomId, @Param("isAlive") boolean isAlive);
     int updateOrder(@Param("userId") Long userId, @Param("order") int order);

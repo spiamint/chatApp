@@ -1,6 +1,9 @@
 package chat.twenty.service.gpt;
 
-import chat.twenty.domain.*;
+import chat.twenty.domain.BaseMessage;
+import chat.twenty.domain.ChatMessage;
+import chat.twenty.domain.TwentyMessage;
+import chat.twenty.domain.UserType;
 import chat.twenty.dto.ChatMessageDto;
 import chat.twenty.dto.TwentyMessageDto;
 import chat.twenty.enums.ChatMessageType;
@@ -13,7 +16,6 @@ import io.github.flashvayne.chatgpt.dto.chat.MultiChatMessage;
 import io.github.flashvayne.chatgpt.service.ChatgptService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.AsyncResult;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpServerErrorException;
@@ -40,8 +42,6 @@ public class CustomGptService {
     private final ChatRoomService roomService;
     private final ChatMessageService chatMessageService;
     private final TwentyMessageService twentyMessageService;
-    private boolean ok = true;
-    private String answer;
 
     /**
      * Member 와 Chatroom 에서 gpt 활성화, 활성화된 gpt 의 UUID 반환
@@ -87,7 +87,7 @@ public class CustomGptService {
 
         // 첫번째 메시지 프롬프트로 변경
         ChatMessage firstMessage = chatMessageList.get(0);
-        setSystemPrompt(firstMessage, ChatMessageType.ACTIVATE_GPT, null);
+        setSystemPrompt(firstMessage, ChatMessageType.ACTIVATE_GPT, null, null);
         
         // gpt 요청 리스트 작성
         List<MultiChatMessage> gptRequestMessageList = makeGptRequestList(chatMessageList);
@@ -106,15 +106,15 @@ public class CustomGptService {
         // gpt 식별자 획득
         String gptUuid = memberService.findGptUuidByRoomId(roomId);
         // 게임 주제 획득
-        ChatRoom findRoom = roomService.findById(roomId);
-        String subject = findRoom.getSubject() == TwentyGameSubject.CUSTOM ? findRoom.getCustomSubject() : findRoom.getSubject().getSubjectName();
+        TwentyGameSubject subject = roomService.findById(roomId).getSubject();
 
         // roomId 와 gptUuid 를 기반으로, 현재 gpt 와의 채팅목록 조회
         List<TwentyMessage> twentyMessageList = twentyMessageService.findCurrentGptQueue(roomId, gptUuid);
         
         // 첫번째 메시지 프롬프트로 변경
         TwentyMessage firstMessage = twentyMessageList.get(0);
-        setSystemPrompt(firstMessage, firstMessage.getType(), subject);
+        String twentyAnswer = roomService.findTwentyAnswer(roomId); // nullable
+        setSystemPrompt(firstMessage, firstMessage.getType(), subject, twentyAnswer);
 
         // gpt 요청리스트 작성
         List<MultiChatMessage> gptRequestList = makeGptRequestList(twentyMessageList);
@@ -133,9 +133,8 @@ public class CustomGptService {
      * GPT 요청 메시지 리스트의 system 프롬프트 작성
      * @param firstMessage : content 가 프롬프트로 replace 될 BaseMessage.
      * @param firstMessageType : TWENTY_GAME_START, ACTIVATE_GPT
-     * @param replaceParam : 가변 프롬프트시, 대체할 문자열
      */
-    protected void setSystemPrompt(BaseMessage firstMessage, ChatMessageType firstMessageType, String replaceParam) {
+    protected void setSystemPrompt(BaseMessage firstMessage, ChatMessageType firstMessageType, TwentyGameSubject subject, String answer) {
 
         firstMessage.setGptSystemRole();
 
@@ -144,10 +143,14 @@ public class CustomGptService {
                 firstMessage.setGptPrompt(GptPrompt.CHAT_PROMPT.prompt);
                 break;
             case TWENTY_GAME_START:
-                TwentyGameSubject subject = roomService.findById(firstMessage.getRoomId()).getSubject();
-                answer = ok ? TwentyGameAnswer.getRandomAnswer(subject) : answer;
-                if (ok) {ok = false;}
-                firstMessage.setGptPrompt(GptPrompt.TWENTY_PROMPT.setTwentyPrompt(replaceParam, answer));
+                // subject not null
+                if (subject == TwentyGameSubject.CUSTOM)
+                    // 아직 임시 구현, 사용자지정 주제
+                    firstMessage.setGptPrompt(GptPrompt.TWENTY_LEGACY_PROMPT
+                            .setLegacyTwentyPrompt(roomService.findById(firstMessage.getRoomId()).getCustomSubject()));
+                else
+                    firstMessage.setGptPrompt(GptPrompt.TWENTY_PROMPT
+                            .setTwentyPrompt(subject.getSubjectName(), answer));
                 break;
         }
     }
@@ -164,7 +167,7 @@ public class CustomGptService {
                         // role = "system" or "assistant" or "user"
                         determineRole(message.getUserId()),
                         // content = "username: content" or "content" when assistant
-                        (message.getUsername().equals("assistant") ? "" : message.getUsername() + ": ") + message.getContent())));
+                        " " + message.getContent())));
 
         // 전체 리스트 로그출력
         log.info("raw gptRequestList in makeGptMessageList()\n{}", requestMessageList.stream()
@@ -201,7 +204,7 @@ public class CustomGptService {
 
         try {
             Future<String> gptResponseFuture = askMultiChatGptToAsync(gptRequestMessageList);
-            gptResponse = gptResponseFuture.get(30, TimeUnit.SECONDS); // 30초 타임아웃
+            gptResponse = gptResponseFuture.get(30L, TimeUnit.SECONDS); // 30초 타임아웃
         } catch (TimeoutException e) {
             log.info("askMultiChatGpt TimeoutException. e = {}, message = {}, gptUuid = {}", e, e.getMessage(), gptUuid);
             gptResponse = "GPT 응답시간이 초과되었습니다. 다시 시도해주세요";
@@ -229,7 +232,6 @@ public class CustomGptService {
      * <p>
      * 나중에 개선의 여지가 있음.
      */
-    @Async
     protected Future<String> askMultiChatGptToAsync(List<MultiChatMessage> gptRequestMessageList) {
         String gptResponse = defaultGptService.multiChat(gptRequestMessageList);
         return new AsyncResult<>(gptResponse); // Future<> 의 구현체인 AsyncResult<> 반환

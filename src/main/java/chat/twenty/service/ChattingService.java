@@ -1,7 +1,6 @@
 package chat.twenty.service;
 
 import chat.twenty.dto.ChatMessageDto;
-import chat.twenty.enums.ChatMessageType;
 import chat.twenty.service.gpt.CustomGptService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,9 +25,8 @@ public class ChattingService {
         Long userId = chatMessageDto.getUserId();
 
         gptService.deActivateGpt(roomId, userId);
-        chatMessageDto.setType(ChatMessageType.GPT_LEAVE);
-        chatMessageDto.setContent("GPT 가 비활성화 되었습니다.");
-        return chatMessageDto;
+        ChatMessageDto gptLeaveMessage = ChatMessageDto.createGptLeaveMessage(roomId);
+        return gptLeaveMessage;
     }
 
     public ChatMessageDto chatToGpt(ChatMessageDto chatMessageDto) {

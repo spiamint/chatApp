@@ -58,8 +58,10 @@ public class ChatMessageDto {
         return chatMessageDto;
     }
 
-    public static ChatMessageDto createGptLeaveMessage() {
+    public static ChatMessageDto createGptLeaveMessage(Long roomId) {
         ChatMessageDto chatMessageDto = new ChatMessageDto();
+        chatMessageDto.setUserId(UserType.GPT.id);
+        chatMessageDto.setRoomId(roomId);
         chatMessageDto.setType(ChatMessageType.GPT_LEAVE);
         chatMessageDto.setContent("GPT 가 비활성화 되었습니다.");
         chatMessageDto.setUsername("SYSTEM");

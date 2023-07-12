@@ -30,10 +30,13 @@ public class TwentyMessageDto {
     private boolean isTwentyStart;     // 시작시, 시작성공여부
 
     private int order;      // 진행시, user 자신의 순서
-    private int twentyNext;         // 진행 시, gpt 가 내려주는 다음 순서
+    private Long nextUserId;         // 진행 시, gpt 가 내려주는 다음 순서의 userId
     private String twentyWinner;   //  종료 시, 승자의 username
     private Long twentyDeadUserId;   // 오답 시 오답 유저의 userId
     private List<TwentyMemberInfo> memberInfoList; // 스무고개 Member 상태(순서) 초기화용 리스트
+    private Long banUserId; // 강퇴할 userId
+    @JsonProperty("isPlayerLeaved")
+    private boolean isPlayerLeaved; // disconnect Leave 메시지에서 플레이중인 유저가 나갔는지 여부(관전자가 아닌지)
 
     public static TwentyMessageDto createSubscribeMessage(Long userId, String username) {
         TwentyMessageDto twentyMessageDto = new TwentyMessageDto();
@@ -45,13 +48,14 @@ public class TwentyMessageDto {
         return twentyMessageDto;
     }
 
-    public static TwentyMessageDto createDisconnectMessage(Long userId, String username) {
+    public static TwentyMessageDto createDisconnectMessage(Long userId, String username, boolean isPlayerDeleted) {
         TwentyMessageDto twentyMessageDto = new TwentyMessageDto();
         twentyMessageDto.setUserId(userId);
         twentyMessageDto.setUsername("SYSTEM");
         twentyMessageDto.setContent(username + " 님이 접속종료 하셨습니다.");
         twentyMessageDto.setCreatedAt(LocalDateTime.now().withNano(0));
         twentyMessageDto.setType(ChatMessageType.LEAVE);
+        twentyMessageDto.isPlayerLeaved = isPlayerDeleted;
         return twentyMessageDto;
     }
 
@@ -101,5 +105,35 @@ public class TwentyMessageDto {
         return deleteMessage;
     }
 
+    public static TwentyMessageDto createAbortMessage(Long roomId, String message) {
+        TwentyMessageDto abortMessage = new TwentyMessageDto();
+        abortMessage.setType(ChatMessageType.TWENTY_GAME_END);
+        abortMessage.setTwentyWinner("");
+        abortMessage.setUserId(UserType.SYSTEM.id);
+        abortMessage.setRoomId(roomId);
+        abortMessage.setUsername("SYSTEM");
+        abortMessage.setContent(message);
+        return abortMessage;
+    }
+
+    public static TwentyMessageDto createBanMessage(Long roomId, Long userId, String username) {
+        TwentyMessageDto twentyMessageDto = new TwentyMessageDto();
+        twentyMessageDto.setRoomId(roomId);
+        twentyMessageDto.setUserId(userId);
+        twentyMessageDto.setUsername("SYSTEM");
+        twentyMessageDto.setContent(username + " 님이 강퇴되었습니다.");
+        twentyMessageDto.setCreatedAt(LocalDateTime.now().withNano(0));
+        twentyMessageDto.setType(ChatMessageType.BAN_MEMBER);
+        twentyMessageDto.setBanUserId(userId);
+        return twentyMessageDto;
+    }
+
+    public static TwentyMessageDto createErrorMessage(String errorMessage) {
+        TwentyMessageDto twentyMessageDto = new TwentyMessageDto();
+        twentyMessageDto.setUsername("SYSTEM");
+        twentyMessageDto.setType(ChatMessageType.ERROR);
+        twentyMessageDto.setContent(errorMessage);
+        return twentyMessageDto;
+    }
 }
 

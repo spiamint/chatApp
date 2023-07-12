@@ -22,6 +22,10 @@ public class ChatRoomRepository {
         return roomMapper.findAll();
     }
 
+    public String findTwentyAnswerById(Long id) {
+        return roomMapper.findTwentyAnswerById(id);
+    }
+
     public ChatRoom save(ChatRoom chatRoom) {
         roomMapper.save(chatRoom);
         return chatRoom;
@@ -49,6 +53,10 @@ public class ChatRoomRepository {
      */
     public boolean updateTwentyNextToZero(Long id) {
         return roomMapper.updateTwentyNextToZero(id) == 1;
+    }
+
+    public void updateTwentyAnswer(Long id, String twentyAnswer) {
+        roomMapper.updateTwentyAnswer(id, twentyAnswer);
     }
 
     public int deleteById(Long id) {

@@ -26,12 +26,12 @@ public class TwentyMemberInfoRepository {
         return mapper.findByRoomIdAndOrder(roomId, order);
     }
 
-    public int save(TwentyMemberInfo twentyMemberInfo) {
-        return mapper.save(twentyMemberInfo);
+    public int countByRoomIdAndIsAlive(Long roomId, boolean isAlive) {
+        return mapper.countByRoomIdAndIsAlive(roomId, isAlive);
     }
 
-    public int updateIsReady(Long userId, boolean isReady) {
-        return mapper.updateIsReady(userId, isReady);
+    public int save(TwentyMemberInfo twentyMemberInfo) {
+        return mapper.save(twentyMemberInfo);
     }
 
     public int updateIsAlive(Long userId, boolean isAlive) {

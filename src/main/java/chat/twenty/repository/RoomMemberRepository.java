@@ -1,7 +1,6 @@
 package chat.twenty.repository;
 
 import chat.twenty.domain.RoomMember;
-import chat.twenty.dto.UserMemberDto;
 import chat.twenty.mapper.RoomMemberMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,9 +29,6 @@ public class RoomMemberRepository {
     public List<RoomMember> findMemberListByRoomId(Long roomId) {
         return memberMapper.findAllByRoomId(roomId);
     }
-    public List<UserMemberDto> findMemberAndUserByRoomId(Long roomId) {
-        return memberMapper.findMemberAndUserByRoomId(roomId);
-    }
     public Optional<String> findGptUuidByRoomId(Long roomId) {
         return memberMapper.findGptUuidByRoomId(roomId);
     }
@@ -45,13 +41,13 @@ public class RoomMemberRepository {
     public int countTwentyReadyMemberByRoomId(Long roomId) {
         return memberMapper.countIsTwentyReadyMemberByRoomId(roomId);
     }
+    public int countIsRoomConnectedMemberByRoomId(Long roomId) {
+        return memberMapper.countIsRoomConnectedMemberByRoomId(roomId);
+    }
 
-    public RoomMember save(Long roomId, Long userId) {
-        // service 로직으로 별도 분리할 필요가 있을듯?
-        RoomMember roomMember = new RoomMember(roomId, userId);
-        log.info("saveMember: {}", roomMember);
+    public RoomMember save(RoomMember roomMember) {
 
-        RoomMember findMember = findById(roomId, userId);
+        RoomMember findMember = findById(roomMember.getRoomId(), roomMember.getUserId());
 
         // 중복입력방지 ( 방 만들때 한번 들어감. 나중에 고치도록)
         if (findMember != null) {
@@ -60,7 +56,7 @@ public class RoomMemberRepository {
         }
 
         memberMapper.save(roomMember);
-        return memberMapper.findById(roomId, userId);
+        return memberMapper.findById(roomMember.getRoomId(), roomMember.getUserId()); // DB 기본값 재조회
     }
 
 
@@ -82,6 +78,10 @@ public class RoomMemberRepository {
 
     public int updateIsTwentyReady(Long roomId, Long userId, boolean twentyGameReady) {
         return memberMapper.updateIsTwentyGameReady(roomId, userId, twentyGameReady);
+    }
+
+    public int updateIsTwentyReadyByRoomId(Long roomId, boolean twentyGameReady) {
+        return memberMapper.updateIsTwentyGameReadyByRoomId(roomId, twentyGameReady);
     }
 
     public void updateGptUuid(Long roomId, Long userId, String gptUuid) {

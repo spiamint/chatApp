@@ -21,7 +21,7 @@ public enum ChatMessageType {
         TWENTY_GAME_ERROR, LEAVE_WHILE_PLAYING,         // 스무고개 게임 에러, 게임중 퇴장
 
         // SYSTEM
-        SYSTEM, NONE, ROOM_DELETED       // 시스템
+        SYSTEM, NONE, ERROR, ROOM_DELETED, BAN_MEMBER       // 시스템
         ;
 
 

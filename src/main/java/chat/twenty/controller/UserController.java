@@ -1,7 +1,7 @@
 package chat.twenty.controller;
 
-import chat.twenty.domain.User;
 import chat.twenty.controller.form.UserAddForm;
+import chat.twenty.domain.User;
 import chat.twenty.service.lower.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,7 +38,6 @@ public class UserController {
         User user = new User(addForm.getLoginId(), addForm.getUsername(), addForm.getPassword());
 
         userService.save(user);
-
 
         return "redirect:/";
     }

@@ -3,11 +3,12 @@ package chat.twenty.controller;
 import chat.twenty.auth.PrincipalDetails;
 import chat.twenty.controller.form.RoomAddForm;
 import chat.twenty.domain.ChatRoom;
+import chat.twenty.domain.RoomMember;
 import chat.twenty.domain.User;
+import chat.twenty.dto.ChatRoomDto;
 import chat.twenty.enums.ChatRoomType;
 import chat.twenty.service.lower.ChatRoomService;
 import chat.twenty.service.lower.RoomMemberService;
-import chat.twenty.service.lower.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -17,20 +18,46 @@ import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Controller
 @Slf4j
 @RequiredArgsConstructor
 public class IndexController {
     private final ChatRoomService roomService;
-    private final UserService userService;
     private final RoomMemberService memberService;
+
+    @GetMapping("/ex") // 에러 테스트용
+    public String errorTest(@RequestParam(required = false) String param) {
+        throw new IllegalStateException("Example Exception with Param, param = {}" + param);
+    }
 
     @RequestMapping("/")
     public String index(Model model,
-                        @RequestParam(value = "needLogin", required = false) boolean needLogin) {
+                        @RequestParam(value = "needLogin", required = false) boolean needLogin,
+                        @RequestParam(value = "isBanned", required = false) boolean isBanned,
+                        @RequestParam(value = "isRoomDeleted", required = false) boolean isRoomDeleted
+                        )throws InterruptedException {
+        log.info("index() needLogin = {}, isBanned = {}, isRoomDeleted = {}", needLogin, isBanned, isRoomDeleted);
 
-        model.addAttribute("roomList", roomService.findAll());
-        model.addAttribute("needLogin", needLogin);
+        Thread.sleep(100); // EventListener 작업 대기
+
+        List<ChatRoom> roomList = roomService.findAll();
+        List<ChatRoomDto> roomDtoList = roomList.stream()
+                .map(room -> ChatRoomDto.from(room, memberService.countConnectedMember(room.getId())))
+                .collect(Collectors.toList()); // 접속중인 membercount 추가
+
+        model.addAttribute("roomList", roomDtoList);
+
+        if (isBanned) {
+            model.addAttribute("alertMessage", "방장에 의해 강퇴되었습니다.");
+        } else if (isRoomDeleted) {
+            model.addAttribute("alertMessage", "방장에 의해 방이 삭제되었습니다.");
+        } if (needLogin) {
+            model.addAttribute("needLogin", true);
+        }
+
         RoomAddForm initRoomAddForm = new RoomAddForm();
         initRoomAddForm.setRoomType(ChatRoomType.CHAT);
         model.addAttribute("roomAddForm", initRoomAddForm);
@@ -69,32 +96,31 @@ public class IndexController {
 
     @GetMapping("/room/{roomId}")
     public String enterRoom(@PathVariable Long roomId, Model model,
-                            @AuthenticationPrincipal PrincipalDetails principalDetails) {
+                            @AuthenticationPrincipal PrincipalDetails principalDetails) throws InterruptedException {
+
+        log.info("enterRoom() roomId = {}", roomId);
+        Thread.sleep(100); // EventListener 작업 대기 (LEAVE WHILE PLAYING 등)
 
         // room 정보 불러오기
         ChatRoom currentRoom = roomService.findById(roomId);
         model.addAttribute("chatRoom", currentRoom);
-        model.addAttribute("currentMember", memberService.findById(roomId, principalDetails.getId()));
+
+        // Member 정보 불러오기
+        RoomMember findMember = memberService.findById(roomId, principalDetails.getId());
+        if (findMember == null) {
+            // 첫입장 처리
+            memberService.enterRoom(roomId, principalDetails.getId());
+            findMember = memberService.findById(roomId, principalDetails.getId());
+        }
+        model.addAttribute("currentMember", findMember);
+
         ChatRoomType currentRoomType = currentRoom.getType();
-
-        log.info("roomId = {}, roomType = {}", roomId, currentRoomType);
-
-        // 입장 처리(service.enterRoom())는 EventListener 에서
 
         if (currentRoomType == ChatRoomType.CHAT) {
             return "room/chatRoom";
-        } else if (currentRoomType == ChatRoomType.TWENTY_GAME && !currentRoom.isGptActivated()) {
-            // 스무고개방이고, 게임중이 아닐때만 입장
-            return "room/twentyGameRoom";
         } else {
-            log.info("enterRoom error, roomId = {}, currentRoomType = {}", roomId, currentRoomType);
-            return "redirect:/";
+            return "room/twentyGameRoom";
         }
-    }
-
-    @GetMapping("/ex")
-    public String example() {
-        return "example";
     }
 
 }

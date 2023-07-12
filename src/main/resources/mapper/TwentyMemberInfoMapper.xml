@@ -7,51 +7,55 @@
 
     <!-- SELECT 문을 사용하여 사용자 정보 조회 -->
     <select id="findById" resultType="TwentyMemberInfo">
-        SELECT * FROM TWENTY_MEMBER_INFO WHERE user_id = #{userId}
+        SELECT * FROM twenty_member_info WHERE user_id = #{userId}
     </select>
 
     <select id="findByRoomId" resultType="TwentyMemberInfo">
-        SELECT * FROM TWENTY_MEMBER_INFO WHERE room_id = #{roomId}
+        SELECT * FROM twenty_member_info WHERE room_id = #{roomId}
     </select>
 
     <select id="findByRoomIdAndOrder" resultType="TwentyMemberInfo">
-        SELECT * FROM TWENTY_MEMBER_INFO WHERE room_id = #{roomId} AND twenty_order = #{order}
+        SELECT * FROM twenty_member_info WHERE room_id = #{roomId} AND twenty_order = #{order}
+    </select>
+
+    <select id="countByRoomIdAndIsAlive" resultType="Integer">
+        SELECT COUNT(*) FROM twenty_member_info WHERE room_id = #{roomId} AND is_alive = #{isAlive}
     </select>
 
     <!-- INSERT 문을 사용하여 사용자 정보 삽입 -->
     <insert id="save">
-        INSERT INTO TWENTY_MEMBER_INFO (user_id, room_id, twenty_order)
+        INSERT INTO twenty_member_info (user_id, room_id, twenty_order)
         VALUES (#{userId}, #{roomId}, #{twentyOrder})
     </insert>
 
     <!-- UPDATE 문을 사용하여 사용자 정보 수정 -->
     <update id="update">
-        UPDATE TWENTY_MEMBER_INFO SET username = #{updateParam.username} WHERE user_id = #{userId}
+        UPDATE twenty_member_info SET username = #{updateParam.username} WHERE user_id = #{userId}
     </update>
 
     <update id="updateOrder">
-        UPDATE TWENTY_MEMBER_INFO SET order = #{order} WHERE user_id = #{userId}
+        UPDATE twenty_member_info SET order = #{order} WHERE user_id = #{userId}
     </update>
 
     <update id="updateIsReady">
-        UPDATE TWENTY_MEMBER_INFO SET is_ready = #{isReady} WHERE user_id = #{userId}
+        UPDATE twenty_member_info SET is_ready = #{isReady} WHERE user_id = #{userId}
     </update>
 
     <update id="updateIsAlive">
-        UPDATE TWENTY_MEMBER_INFO SET is_alive = #{isAlive} WHERE user_id = #{userId}
+        UPDATE twenty_member_info SET is_alive = #{isAlive} WHERE user_id = #{userId}
     </update>
 
     <update id="updateIsAliveAll">
-        UPDATE TWENTY_MEMBER_INFO SET is_alive = #{isAlive} WHERE room_id = #{roomId}
+        UPDATE twenty_member_info SET is_alive = #{isAlive} WHERE room_id = #{roomId}
     </update>
 
     <!-- DELETE 문을 사용하여 사용자 정보 삭제 -->
     <delete id="deleteById">
-        DELETE FROM TWENTY_MEMBER_INFO WHERE user_id = #{userId}
+        DELETE FROM twenty_member_info WHERE user_id = #{userId}
     </delete>
 
     <delete id="deleteByRoomId">
-        DELETE FROM TWENTY_MEMBER_INFO WHERE room_id = #{roomId}
+        DELETE FROM twenty_member_info WHERE room_id = #{roomId}
     </delete>
 
 </mapper>

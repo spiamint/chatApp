@@ -1,8 +1,8 @@
 package chat.twenty.service.lower;
 
 import chat.twenty.domain.RoomMember;
-import chat.twenty.dto.UserMemberDto;
 import chat.twenty.repository.RoomMemberRepository;
+import chat.twenty.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -15,6 +15,7 @@ import java.util.List;
 public class RoomMemberService {
 
     private final RoomMemberRepository repository;
+    private final UserRepository userRepository; // username 사용
 
     // public
 
@@ -22,17 +23,21 @@ public class RoomMemberService {
         return repository.findById(roomId, userId);
     }
     public List<RoomMember> findAll() { return repository.findAll(); }
-    public List<UserMemberDto> findMemberList(Long roomId) {
-        return repository.findMemberAndUserByRoomId(roomId);
+    public List<RoomMember> findMemberList(Long roomId) {
+        return repository.findMemberListByRoomId(roomId);
     }
     public List<RoomMember> findIsTwentyReadyMemberByRoomId(Long roomId) {
         return repository.findIsTwentyReadyMemberByRoomId(roomId);
     }
-    public int countMemberByRoomId(Long roomId) {
+    public int countRoomMember(Long roomId) {
         return repository.countMemberByRoomId(roomId);
     }
     public int countTwentyReadyMemberByRoomId(Long roomId) {
         return repository.countTwentyReadyMemberByRoomId(roomId);
+    }
+
+    public int countConnectedMember(Long roomId) {
+        return repository.countIsRoomConnectedMemberByRoomId(roomId);
     }
 
     public void enterRoom(Long roomId, Long userId) {
@@ -88,16 +93,20 @@ public class RoomMemberService {
         return updateTwentyReady(roomId, userId, false) == 1;
     }
 
+    public void twentyUnreadyAllMember(Long roomId) {
+        repository.updateIsTwentyReadyByRoomId(roomId, false);
+    }
+
     public boolean isTwentyAllReady(Long roomId) {
-        return countTwentyReadyMemberByRoomId(roomId) == countMemberByRoomId(roomId);
+        return countTwentyReadyMemberByRoomId(roomId) == countRoomMember(roomId);
     }
 
 
     // protected =======================================================================================
 
     protected RoomMember save(Long roomId, Long userId) {
-        repository.save(roomId, userId);
-        return repository.findById(roomId, userId);
+        RoomMember roomMember = new RoomMember(roomId, userId, userRepository.findById(userId).getUsername());
+        return repository.save(roomMember); // repository 에서 재조회 해줌
     }
 
     protected void update(Long roomId, Long userId, RoomMember updateParam) {

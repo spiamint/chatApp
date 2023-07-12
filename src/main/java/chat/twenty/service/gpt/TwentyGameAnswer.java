@@ -14,6 +14,9 @@ public class TwentyGameAnswer {
             case FOOD:
                 answerList = foodAnswerList;
                 break;
+            case STARCRAFT:
+                answerList = starcraftAnswerList;
+                break;
             default:
                 answerList = null;
                 log.warn("TwentyGameAnswer.getRandomAnswer, subject = {} is not supported", subject);
@@ -39,6 +42,21 @@ public class TwentyGameAnswer {
             "잔치국수", "송편", "떡꼬치", "닭발", "닭강정", "인절미", "해물파전", "감자전", "장조림",
             "아귀찜", "미역국", "곰탕", "사골국", "수제비", "꽃게탕", "냉모밀", "추어탕", "간장게장", "양념게장",
             "달고나", "뻥튀기", "붕어빵"
+    );
+
+    private static final List<String> starcraftAnswerList = List.of(
+            "드론", "저글링", "히드라리스크", "뮤탈리스크", "스커지", "럴커", "울트라리스크",
+            "디파일러", "오버로드", "디바우러", "가디언", "디파일러",
+            "브루들링", "퀸", "인페스티드테란", "울트라리스크", "라바"
+            ,
+            "에쉬비", "마린", "파이어뱃", "고스트", "메딕",
+            "시즈 탱크", "사이언스 베슬", "벌쳐", "골리앗",
+            "배틀크루저", "레이스", "발키리", "드랍쉽"
+            ,
+            "질럿", "드라군", "다크 템플러", "하이템플러",
+            "아비터", "옵저버", "셔틀", "리버", "스카우트", "캐리어", "커세어",
+            "프로브",
+            "아칸", "다크아칸"
     );
 
 }

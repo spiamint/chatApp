@@ -65,7 +65,7 @@ public class ChatWebSocketEventListener {
         // 현재 접속한 사용자가 gptOwner 이면, gpt 비활성화
         if (currentMember.isGptOwner()) {
             gptService.deActivateGpt(roomId, userId);
-            ChatMessageDto gptLeaveMessage = ChatMessageDto.createGptLeaveMessage();
+            ChatMessageDto gptLeaveMessage = ChatMessageDto.createGptLeaveMessage(roomId);
             messagingTemplate.convertAndSend("/topic/chat/" + roomId, gptLeaveMessage);
         }
 
@@ -89,14 +89,14 @@ public class ChatWebSocketEventListener {
             roomService.deleteById(roomId); // 방 삭제
             // 메시지는 일단 삭제하지 않음.
             TwentyMessageDto deleteRoomMessageDto = TwentyMessageDto.createRoomDeleteMessage();
-            messagingTemplate.convertAndSend("/topic/twenty-game/" + roomId, deleteRoomMessageDto);
+            messagingTemplate.convertAndSend("/topic/chat/" + roomId, deleteRoomMessageDto);
             return;
         }
 
         // 현재 접속한 사용자가 gptOwner 이면, gpt 비활성화
         if (currentMember.isGptOwner()) {
             gptService.deActivateGpt(roomId, userId);
-            ChatMessageDto gptLeaveMessage = ChatMessageDto.createGptLeaveMessage();
+            ChatMessageDto gptLeaveMessage = ChatMessageDto.createGptLeaveMessage(roomId);
             messagingTemplate.convertAndSend("/topic/chat/" + roomId, gptLeaveMessage);
         }
 

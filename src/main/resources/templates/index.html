@@ -24,6 +24,14 @@
             margin-top: 20px;
         }
 
+        #userInfoBox {
+            padding: 10px;
+        }
+
+        #userInfoBox span {
+            margin: 0 10px;
+        }
+
         .modal-body > label {
             padding: 8px;
         }
@@ -58,6 +66,7 @@
         let thIsLoginError = [[${isLoginError}]];
         let thLoginId = [[${loginId}]];
         let thIsCreateRoomError = [[${isCreateRoomError}]];
+        let alertMessage = [[${alertMessage}]];
         /*]]>*/
 
         // 로깅
@@ -74,19 +83,14 @@
             // needLogin 이 true 이고, 로그인 정보패널이 없으면 로그인 모달을 띄움
             if (thNeedLogin && !document.querySelector('#userInfoBox')) { triggerLoginModal(); }
 
+            // controller 에서 alertMessage 있으면 띄움
+            if (alertMessage) { alert(alertMessage); }
+
             if (thIsCreateRoomError) {
                 // 방 만들때 에러나면, 방만들기 모달에서 값이 선택될때, radio.change 이벤트 리스너가 안먹어 강제로 설정
                 changeTwentyGameOptionWrapperDisplay(document.querySelector("input[name='roomType']:checked").value);
                 triggerCreateRoomModal();
             }
-
-            document.querySelectorAll(".room-list-item").forEach((roomListItem) => {
-                // 게임중인 방 입장방지
-                if (roomListItem.querySelector(".room-list-item-is-playing")) {
-                    roomListItem.querySelector(".room-list-item-link").removeAttribute("href");
-                }
-            });
-
 
             // ================================================================
 
@@ -159,10 +163,16 @@
     <h1 id="indexHeader"><a href="/">채팅 앱</a></h1>
 
     <!-- 모달 트리거 -->
-    <button id="loginModalTriggerBtn" type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#loginModal">
+    <button sec:authorize="isAnonymous()"
+        id="loginModalTriggerBtn" type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#loginModal">
         로그인
     </button>
-    <button id="addUserBtn" type="button" class="btn btn-outline-primary" onclick="location.href = '/user/add'">
+    <button sec:authorize="isAuthenticated()"
+            type="button" class="btn btn-outline-primary" onclick="location.href='/logout'">
+        로그아웃
+    </button>
+    <button sec:authorize="isAnonymous()"
+        id="addUserBtn" type="button" class="btn btn-outline-primary" onclick="location.href = '/user/add'">
         회원가입
     </button>
 
@@ -198,12 +208,13 @@
 
     <hr>
 
-    <h4>session user info</h4>
+    <h4>유저정보</h4>
+    <div sec:authorize="isAnonymous()">
+        <span>로그인이 필요합니다.</span>
+    </div>
     <div sec:authorize="isAuthenticated()" id="userInfoBox">
-        <span th:text="'id : ' + ${#authentication.principal.user.id}"></span>
-        <span th:text="' username : ' + ${#authentication.name}"></span>
-        <span th:text="' authorities : ' + ${#authentication.authorities}"></span>
-        <span th:text="' credential : ' + ${#authentication.credentials}"></span>
+        <span th:text="'로그인ID : ' + ${#authentication.principal.user.loginId}"></span>
+        <span th:text="'닉네임 : ' + ${#authentication.name}"></span>
     </div>
 
     <hr>
@@ -247,7 +258,7 @@
                             <select id="definedTwentyGameSubject" th:field="*{subject}" name="subject" class="form-select">
                                 <option value="CUSTOM" selected>직접입력</option>
                                 <option value="FOOD">음식</option>
-                                <option value="JOB">직업</option>
+                                <option value="STARCRAFT">스타크래프트 유닛</option>
                             </select>
 
                             <label for="customTwentyGameSubject">주제 직접 입력</label>
@@ -271,9 +282,14 @@
             th:each="room : ${roomList}">
             <div class="ms-2 me-auto">
                 <div class="fw-bold" th:text="${room.getName}">roomName</div>
-                <a class="room-list-item-link" th:href="@{/room/{roomId}(roomId=${room.id})}"> link </a>
+                <a class="room-list-item-link" th:href="@{/room/{roomId}(roomId=${room.id})}"> 입장하기 </a>
             </div>
-            <span class="badge bg-primary rounded-pill room-list-item-is-playing" th:if="${room.isGptActivated() && room.type == T(chat.twenty.enums.ChatRoomType).TWENTY_GAME}">게임중</span>
+            <span class="badge bg-primary rounded-pill room-list-item-connected-member-count"
+                  th:unless="${room.isGptActivated() && room.type == T(chat.twenty.enums.ChatRoomType).TWENTY_GAME}"
+                  th:text="${room.connectedMemberCount} + ' 명 접속중'">0</span>
+            <span class="badge bg-primary rounded-pill room-list-item-is-playing"
+                  th:if="${room.isGptActivated() && room.type == T(chat.twenty.enums.ChatRoomType).TWENTY_GAME}"
+                    th:text="${room.connectedMemberCount} + ' 명 게임중'">게임중</span>
         </li>
     </ul>
 

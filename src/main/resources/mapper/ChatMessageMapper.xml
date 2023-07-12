@@ -6,37 +6,37 @@
 <mapper namespace="chat.twenty.mapper.ChatMessageMapper">
 
     <select id="findById" resultType="ChatMessage">
-        SELECT * FROM CHAT_MESSAGE WHERE id = #{id}
+        SELECT * FROM chat_message WHERE id = #{id}
     </select>
 
     <select id="findAll" resultType="ChatMessage">
-        SELECT * FROM CHAT_MESSAGE LIMIT 0, 100
+        SELECT * FROM chat_message LIMIT 0, 100
     </select>
 
     <select id="findByRoomId" resultType="ChatMessage">
-        SELECT * FROM CHAT_MESSAGE WHERE room_id = #{roomId}
+        SELECT * FROM chat_message WHERE room_id = #{roomId}
     </select>
 
     <select id="findByRoomIdAndUserId" resultType="ChatMessage">
-        SELECT * FROM CHAT_MESSAGE WHERE room_id = #{roomId} AND user_id = #{userId}
+        SELECT * FROM chat_message WHERE room_id = #{roomId} AND user_id = #{userId}
     </select>
 
     <select id="findGptChatByRoomIdAndGptUuid" resultType="ChatMessage">
-        SELECT * FROM CHAT_MESSAGE WHERE room_id = #{roomId} AND is_gpt_chat = true AND gpt_uuid = #{gptUuid}
+        SELECT * FROM chat_message WHERE room_id = #{roomId} AND is_gpt_chat = true AND gpt_uuid = #{gptUuid}
     </select>
 
     <insert id="save" useGeneratedKeys="true" keyProperty="id">
 -- chatMessage 삽입
-        INSERT INTO CHAT_MESSAGE (room_id, user_id, type, username, content, created_at, is_gpt_chat, gpt_uuid)
+        INSERT INTO chat_message (room_id, user_id, type, username, content, created_at, is_gpt_chat, gpt_uuid)
         VALUES (#{roomId}, #{userId}, #{type}, #{username}, #{content}, #{createdAt}, #{isGptChat}, #{gptUuid})
     </insert>
 
     <update id="update">
-        UPDATE CHAT_MESSAGE SET content = #{updateParam.content} WHERE id = #{id}
+        UPDATE chat_message SET content = #{updateParam.content} WHERE id = #{id}
     </update>
 
     <delete id="deleteById">
-        DELETE FROM CHAT_MESSAGE WHERE id = #{id}
+        DELETE FROM chat_message WHERE id = #{id}
     </delete>
 
 </mapper>

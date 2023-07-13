@@ -5,7 +5,7 @@ import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDateTime;
 
-@Getter @ToString @EqualsAndHashCode
+@Getter @ToString
 @AllArgsConstructor(access = AccessLevel.PROTECTED)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @SuperBuilder // 부모클래스 포함 빌더

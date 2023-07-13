@@ -1,10 +1,7 @@
 package chat.twenty.domain;
 
 import chat.twenty.enums.ChatMessageType;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDateTime;
@@ -16,6 +13,7 @@ import java.time.LocalDateTime;
 @SuperBuilder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter @Setter // setter 나중에 지워야함
+@EqualsAndHashCode
 public abstract class BaseMessage {
 
     protected Long id;        // auto_increment

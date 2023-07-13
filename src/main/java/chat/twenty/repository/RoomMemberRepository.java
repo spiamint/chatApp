@@ -32,6 +32,9 @@ public class RoomMemberRepository {
     public Optional<String> findGptUuidByRoomId(Long roomId) {
         return memberMapper.findGptUuidByRoomId(roomId);
     }
+    public RoomMember findRoomOwnerByRoomId(Long roomId) {
+        return memberMapper.findRoomOwnerByRoomId(roomId);
+    }
     public List<RoomMember> findIsTwentyReadyMemberByRoomId(Long roomId) {
         return memberMapper.findIsTwentyReadyMemberByRoomId(roomId);
     }

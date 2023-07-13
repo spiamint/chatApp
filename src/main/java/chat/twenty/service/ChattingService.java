@@ -31,6 +31,12 @@ public class ChattingService {
 
     public ChatMessageDto chatToGpt(ChatMessageDto chatMessageDto) {
         ChatMessageDto resultChatMessageDto = gptService.sendGptChatRequest(chatMessageDto.getRoomId());
+
+        if (resultChatMessageDto.getContent().length() > 200) {
+            // 200자 이상이면 180자로 자르고, 마지막에 ...(너무 긴 대답) 을 붙인다.
+            resultChatMessageDto.setContent(resultChatMessageDto.getContent().substring(0, 180) + "...(너무 긴 대답)");
+        }
+
         return resultChatMessageDto;
     }
 

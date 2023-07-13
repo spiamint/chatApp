@@ -17,6 +17,10 @@
         SELECT * FROM room_member WHERE room_id = #{roomId}
     </select>
 
+    <select id="findRoomOwnerByRoomId" resultType="RoomMember">
+        SELECT * FROM room_member WHERE room_id = #{roomId} AND is_room_owner = true
+    </select>
+
     <select id="findGptUuidByRoomId" resultType="String">
         SELECT gpt_uuid FROM room_member WHERE room_id = #{roomId} AND gpt_uuid IS NOT NULL
     </select>

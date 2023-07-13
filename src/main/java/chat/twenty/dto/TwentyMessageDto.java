@@ -5,6 +5,7 @@ import chat.twenty.domain.UserType;
 import chat.twenty.enums.ChatMessageType;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -14,6 +15,7 @@ import java.util.List;
  */
 
 @Data
+@NoArgsConstructor
 public class TwentyMessageDto {
     private Long roomId;
     private Long userId;

@@ -1,6 +1,5 @@
 package chat.twenty.controller;
 
-import chat.twenty.auth.PrincipalDetails;
 import chat.twenty.domain.RoomMember;
 import chat.twenty.dto.TwentyMessageDto;
 import chat.twenty.service.TwentyMessageDtoProcessor;
@@ -12,9 +11,10 @@ import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.util.List;
 import java.util.Map;
@@ -78,25 +78,6 @@ public class TwentyController {
         List<RoomMember> memberList = memberService.findMemberList(roomId);
         log.info("memberList = {}", memberList);
         return Map.of("memberList", memberList);
-    }
-
-    @ResponseBody
-    @PostMapping("/twenty-game/room/{roomId}/delete-member")
-    public Map<String, Object> deleteMember(@PathVariable Long roomId,
-                                            @RequestBody UserIdBanRequest userIdBanRequest,
-                                            @AuthenticationPrincipal PrincipalDetails principalDetails) {
-        Long currentUserId = principalDetails.getUser().getId();
-        RoomMember findMember = memberService.findById(roomId, currentUserId);
-        Long bannedUserId = userIdBanRequest.getUserId();
-        log.info("deleteMember() roomId = {}, bannedUserId = {}, findMember = {}", roomId, bannedUserId, findMember);
-
-        if (findMember == null || !findMember.isRoomOwner() || findMember.getUserId() == bannedUserId ) {
-            // 방 소속X OR 방장이아님 OR 스스로를 강퇴
-//            log.info("deleteMember() roomId = {}, bannedUserId = {}, findMember = {}", roomId, bannedUserId, findMember);
-            return Map.of("result", "fail", "message", "강퇴할 수 없습니다.");
-        }
-        memberService.leaveRoom(roomId, bannedUserId);
-        return Map.of("result", "success", "message", "강퇴 하였습니다.");
     }
 
 }

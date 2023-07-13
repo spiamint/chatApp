@@ -26,6 +26,9 @@ public class RoomMemberService {
     public List<RoomMember> findMemberList(Long roomId) {
         return repository.findMemberListByRoomId(roomId);
     }
+    public RoomMember findRoomOwner(Long roomId) {
+        return repository.findRoomOwnerByRoomId(roomId);
+    }
     public List<RoomMember> findIsTwentyReadyMemberByRoomId(Long roomId) {
         return repository.findIsTwentyReadyMemberByRoomId(roomId);
     }
@@ -45,7 +48,7 @@ public class RoomMemberService {
     }
 
     /**
-     * (방 생성 후,) 방장으로서 방에 입장
+     * (방 생성 후,) 방장으로서 방에 입장 (연결X)
      */
     public void enterRoomByOwner(Long roomId, Long userId) {
         save(roomId, userId);

@@ -14,17 +14,16 @@ import chat.twenty.service.lower.RoomMemberService;
 import chat.twenty.service.lower.TwentyMessageService;
 import io.github.flashvayne.chatgpt.dto.chat.MultiChatMessage;
 import io.github.flashvayne.chatgpt.service.ChatgptService;
+import io.netty.channel.ConnectTimeoutException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.AsyncResult;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.client.ResourceAccessException;
 
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 /**
@@ -88,10 +87,10 @@ public class CustomGptService {
         // 첫번째 메시지 프롬프트로 변경
         ChatMessage firstMessage = chatMessageList.get(0);
         setSystemPrompt(firstMessage, ChatMessageType.ACTIVATE_GPT, null, null);
-        
+
         // gpt 요청 리스트 작성
         List<MultiChatMessage> gptRequestMessageList = makeGptRequestList(chatMessageList);
-        
+
         // gpt 요청 후 응답
         String gptResponse = askMultiChatGpt(gptUuid, gptRequestMessageList);
 
@@ -110,7 +109,7 @@ public class CustomGptService {
 
         // roomId 와 gptUuid 를 기반으로, 현재 gpt 와의 채팅목록 조회
         List<TwentyMessage> twentyMessageList = twentyMessageService.findCurrentGptQueue(roomId, gptUuid);
-        
+
         // 첫번째 메시지 프롬프트로 변경
         TwentyMessage firstMessage = twentyMessageList.get(0);
         String twentyAnswer = roomService.findTwentyAnswer(roomId); // nullable
@@ -131,7 +130,8 @@ public class CustomGptService {
 
     /**
      * GPT 요청 메시지 리스트의 system 프롬프트 작성
-     * @param firstMessage : content 가 프롬프트로 replace 될 BaseMessage.
+     *
+     * @param firstMessage     : content 가 프롬프트로 replace 될 BaseMessage.
      * @param firstMessageType : TWENTY_GAME_START, ACTIVATE_GPT
      */
     protected void setSystemPrompt(BaseMessage firstMessage, ChatMessageType firstMessageType, TwentyGameSubject subject, String answer) {
@@ -192,10 +192,9 @@ public class CustomGptService {
     }
 
     /**
-     * GPT 에게 질문 요청
-     *
+     * 라이브러리를 사용하여, GPT 에게 질문 요청
      * @param gptUuid               : gpt 식별자 (나중에 roomId 도 같이 넣을지 고려)
-     * @param gptRequestMessageList : 요청 MultiChatMessage 리스트
+     * @param gptRequestMessageList : 요청 MultiChatMessage 리스트 (라이브러리 스펙)
      * @return
      */
     protected String askMultiChatGpt(String gptUuid, List<MultiChatMessage> gptRequestMessageList) {
@@ -203,39 +202,27 @@ public class CustomGptService {
         String gptResponse = ""; // GPT 답변
 
         try {
-            Future<String> gptResponseFuture = askMultiChatGptToAsync(gptRequestMessageList);
-            gptResponse = gptResponseFuture.get(30L, TimeUnit.SECONDS); // 30초 타임아웃
-        } catch (TimeoutException e) {
-            log.info("askMultiChatGpt TimeoutException. e = {}, message = {}, gptUuid = {}", e, e.getMessage(), gptUuid);
-            gptResponse = "GPT 응답시간이 초과되었습니다. 다시 시도해주세요";
-        }catch (HttpServerErrorException.ServiceUnavailable e) {
-            log.info("askMultiChatGpt ServiceUnavailable. e = {}, message = {}, gptUuid = {}", e, e.getMessage(), gptUuid);
+            gptResponse = defaultGptService.multiChat(gptRequestMessageList);
+
+        } catch (HttpServerErrorException.ServiceUnavailable e) {
+            // GPT response Error
+            log.info("askMultiChatGpt ServiceUnavailable. e = {},\n message = {}, gptUuid = {}", e, e.getMessage(), gptUuid);
             gptResponse = "GPT 서버가 현재 과부하상태(overloaded) 입니다. 잠시후 다시 시도해주세요";
+
+        } catch (ResourceAccessException e) {
+            log.info("askMultiChatGpt ResourceAccessException e = {},\n message = {}, rootCause ={} gptUuid = {}", e, e.getMessage(), e.getRootCause(), gptUuid);
+            if (e.getRootCause() instanceof SocketTimeoutException || e.getRootCause() instanceof ConnectTimeoutException)
+                gptResponse = "GPT 응답시간이 초과되었습니다. 다시 시도해주세요"; // RestTemplate timeout
+             else
+                gptResponse = "GPT 응답에 문제가 발생했습니다. 새로고침 해주세요.";
+
         } catch (Exception e) {
-            log.info("askMultiChatGpt Exception. e = {}, message = {}, gptUuid = {}", e, e.getMessage(), gptUuid);
-            gptResponse = "Exception = " + e.getClass().getName() + "gptUuid = " + gptUuid;
+            log.info("askMultiChatGpt Exception. e = {},\n message = {}, gptUuid = {}, cause={}", e, e.getMessage(), gptUuid, e.getCause());
+            gptResponse = "시스템 오류로 인해 GPT 응답에 문제가 발생했습니다. 새로고침 해주세요.";
         }
+
         log.info("askMultiChatGpt(), gptUuid = {}, gptResponse = {}", gptUuid, gptResponse);
 
         return gptResponse;
     }
-
-    /**
-     * 라이브러리를 사용하여, GPT 에게 직접 비동기 요청 및 비동기 응답
-     * <p>
-     * 라이브러리가 비동기로 작성되지 않았기 때문에, 해당 작업을 비동기화 하기위한 별도 메서드.
-     * GPT 질의를 비동기화 하고, 답변인 gptResponse 를 Future<String> 으로 받기위해, AsyncResult<> 형태로 반환한다.
-     * 뿐만아니라, GPT 의 대답에 timeout 도 설정한다.
-     * <p>
-     * 레퍼런스에, ListenableFuture 과 CompleteableFuture 등 논블록킹 방식도 있으나, 현재상황에서는 일단
-     * 블로킹도 문제 없으니 해당 방식 사용.
-     * <p>
-     * 나중에 개선의 여지가 있음.
-     */
-    protected Future<String> askMultiChatGptToAsync(List<MultiChatMessage> gptRequestMessageList) {
-        String gptResponse = defaultGptService.multiChat(gptRequestMessageList);
-        return new AsyncResult<>(gptResponse); // Future<> 의 구현체인 AsyncResult<> 반환
-    }
-
-
 }

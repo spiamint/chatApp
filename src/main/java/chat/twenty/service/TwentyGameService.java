@@ -58,7 +58,7 @@ public class TwentyGameService {
      */
     public TwentyMessageDto confirmGameStart(TwentyMessageDto twentyMessageDto) {
 
-        // (개발용) PlayerInfo 초기화 *******************************************
+        // MemberInfo 초기화 (보험)
         memberInfoService.deleteByRoomId(twentyMessageDto.getRoomId());
 
         ChatRoom findRoom = roomService.findById(twentyMessageDto.getRoomId());
@@ -134,6 +134,10 @@ public class TwentyGameService {
         TwentyMessageDto gptRespMessage = gptService.sendGptTwentyRequest(roomId);
         gptRespMessage.setNextUserId(nextMemberInfo.getUserId());
 
+        // GPT 대답 후처리
+        String twentyAnswer = roomService.findTwentyAnswer(roomId);
+        gptRespMessage.setContent(postProcessGptAnswer(gptRespMessage.getContent(), twentyAnswer));
+
         log.info("proceedGame() userId = {}, nextOrder = {}", nextMemberInfo.getUserId(), nextMemberInfo.getTwentyOrder());
         return gptRespMessage;
     }
@@ -182,28 +186,48 @@ public class TwentyGameService {
         return nextMemberInfo;
     }
 
-    protected boolean validateAnswer(String gptResponse) {
-        return gptResponse.contains("#&#");
+    /**
+     * 게임의 진행을 매끄럽게 하기위해 필요에 따라 gpt 의 응답을 가공
+     * 정답 판별중 일때는 사용하지 않음.
+     */
+    protected String postProcessGptAnswer(String gptResponse, String twentyAnswer) {
+        String result = gptResponse;
+        if (gptResponse.length() > 200) {
+            // 200자 이상이면 180자로 자르고, 마지막에 ...(너무 긴 대답) 을 붙인다.
+            result = gptResponse.substring(0, 180) + "...(너무 긴 대답)";
+
+        } else if (gptResponse.contains("축하")) {
+            // 정답 판별중이 아닐때, 축하(합니다) 메시지 전부 수정
+            result = "대답할 수 없습니다. 다음 질문을 진행해 주세요.";
+
+        } else if (twentyAnswer != null && gptResponse.contains(twentyAnswer)) {
+            // 정답이 포함되어있으면 정답을 'ㅇㅇ' 로 바꾸고 반환
+            result = gptResponse.replace(twentyAnswer, "ㅇㅇ");
+        }
+        return result;
     }
 
     public TwentyMessageDto proceedAnswer(Long roomId, TwentyMessageDto twentyMessageDto) {
         // 게임 진행후 GPT 질의 까지는 동일
         TwentyMessageDto gptRespMessage = proceedGame(roomId, twentyMessageDto.getUserId(), twentyMessageDto.getOrder());
+
         // 정답인지 검증
-        boolean isAnswer = validateAnswer(gptRespMessage.getContent());
+        String twentyAnswer = roomService.findTwentyAnswer(roomId);
+        boolean isAnswer = twentyMessageDto.getContent().contains(twentyAnswer);
+
         log.info("proceedAnswer() inputContent = {} gptRespMessage.getContent() = {}, isAnswer = {}", twentyMessageDto.getContent() , gptRespMessage.getContent(), isAnswer);
 
         if (isAnswer) {
             // 정답 처리
             finishGame(roomId);
             gptRespMessage.setType(ChatMessageType.TWENTY_GAME_END);
-            gptRespMessage.setContent(gptRespMessage.getContent().replace("#&#", "")); // 정답 identifier 제거
             gptRespMessage.setTwentyWinner(twentyMessageDto.getUsername());
+            gptRespMessage.setContent(twentyMessageDto.getUsername() + " 님 정답입니다. 스무고개를 종료합니다. 정답: " + twentyAnswer);
         } else {
             // 오답처리
             memberInfoService.makeMemberNotAlive(twentyMessageDto.getUserId());
             gptRespMessage.setTwentyDeadUserId(twentyMessageDto.getUserId());
-            gptRespMessage.setContent(gptRespMessage.getContent() + " / " + twentyMessageDto.getUsername() + "님 사망");
+            gptRespMessage.setContent("오답 입니다. 다음 질문을 진행해주세요. / " + twentyMessageDto.getUsername() + "님 사망");
 
             if (memberInfoService.isRoomAllDead(roomId)) {
                 // 모든 유저가 정답을 맞히지 못함.
@@ -230,8 +254,9 @@ public class TwentyGameService {
 
         memberService.findIsTwentyReadyMemberByRoomId(roomId).forEach(member -> {
             memberService.twentyUnreadyAllMember(roomId); // 모든유저 unready
-            gptService.deActivateGpt(roomId, member.getUserId()); // gpt 비활성화
         });
+
+        gptService.deActivateGpt(roomId, memberService.findRoomOwner(roomId).getUserId()); // gpt 비활성화
     }
 
     public TwentyMessageDto banMember(Long roomId, Long userId, Long banUserId) {
@@ -246,4 +271,5 @@ public class TwentyGameService {
         memberService.leaveRoom(roomId, banUserId);
         return TwentyMessageDto.createBanMessage(roomId, banUserId, findBanMember.getUsername());
     }
+
 }

@@ -76,6 +76,9 @@ dependencies {
 	// validation
 	implementation("org.springframework.boot:spring-boot-starter-validation")
 
+	// https://mvnrepository.com/artifact/org.apache.httpcomponents/httpclient for RestTemplate
+	implementation("org.apache.httpcomponents:httpclient:4.5.13")
+
 
 
 }

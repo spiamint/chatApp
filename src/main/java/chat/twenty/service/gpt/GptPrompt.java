@@ -21,11 +21,10 @@ public enum GptPrompt {
 
     TWENTY_PROMPT("You are gonna be play 'Twenty questions game' with users by using korean." +
             "The subject is @, and The 'answer of game' is %. " +
-            "Users will ask you A number of questions to guess 'answer of game(%)', you have to reply by using only 'Yes' or 'No'. to users." +
-            "You must refuse reply when you can't reply to user's question only by 'Yes' or 'No'. " +
-            "Though the name of game is 'Twenty questions game', amount of questions is unlimited." +
+            "Users will ask you A number of questions to guess 'answer of game(%)', you must reply by only 'Yes' or 'No'. to users." +
+            "You must refuse reply when you can't start reply by 'Yes' or 'No' " +
+            "Amount of questions can grow over 20." +
             "When one of users message has exact 'answer of game(%)', that user is winner," +
-            "then your next reply has to contain '#&#' identifier for determine winner." +
             "Your message must not contain the '%' until when someone win the game." +
             "If you ready, declare the game-start by korean. For example, " +
             "'지금부터 스무고게 게임을 시작합니다. 질문해주세요.' or " +

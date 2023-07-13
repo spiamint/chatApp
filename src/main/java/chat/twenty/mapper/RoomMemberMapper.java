@@ -14,6 +14,7 @@ public interface RoomMemberMapper {
     List<RoomMember> findAll();
     List<RoomMember> findAllByRoomId(@Param("roomId") Long roomId);
     Optional<String> findGptUuidByRoomId(@Param("roomId") Long roomId);
+    RoomMember findRoomOwnerByRoomId(@Param("roomId") Long roomId);
     List<RoomMember> findIsTwentyReadyMemberByRoomId(Long roomId);
     int countMemberByRoomId(@Param("roomId") Long roomId);
     int countIsTwentyReadyMemberByRoomId(Long roomId);

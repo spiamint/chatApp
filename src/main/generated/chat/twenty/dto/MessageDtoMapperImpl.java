@@ -6,7 +6,7 @@ import javax.annotation.processing.Generated;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2023-07-11T23:02:51+0900",
+    date = "2023-07-13T22:45:52+0900",
     comments = "version: 1.5.3.Final, compiler: javac, environment: Java 11.0.19 (Amazon.com Inc.)"
 )
 public class MessageDtoMapperImpl implements MessageDtoMapper {

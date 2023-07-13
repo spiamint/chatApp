@@ -73,7 +73,10 @@ public class IndexController {
 
         if (bindingResult.hasErrors()) {
             log.info("bindingResult = {}", bindingResult);
-            model.addAttribute("roomList", roomService.findAll());
+            model.addAttribute("roomList",
+                    roomService.findAll().stream()
+                    .map(room -> ChatRoomDto.from(room, memberService.countConnectedMember(room.getId())))
+                    .collect(Collectors.toList())); // 접속중인 membercount 추가
             model.addAttribute("isCreateRoomError", true);
             return "index";
         }
@@ -91,7 +94,7 @@ public class IndexController {
         // 방 멤버이자 오너로 입장
         memberService.enterRoomByOwner(savedRoom.getId(), currentUser.getId());
 
-        return "redirect:/";
+        return "redirect:/room/" + savedRoom.getId();
     }
 
     @GetMapping("/room/{roomId}")

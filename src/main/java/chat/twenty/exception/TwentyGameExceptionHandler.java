@@ -1,6 +1,7 @@
 package chat.twenty.exception;
 
 import chat.twenty.domain.User;
+import chat.twenty.domain.UserType;
 import chat.twenty.dto.TwentyMessageDto;
 import chat.twenty.enums.ChatMessageType;
 import chat.twenty.service.lower.UserService;
@@ -31,6 +32,7 @@ public class TwentyGameExceptionHandler {
 
         TwentyMessageDto twentyMessageDto = new TwentyMessageDto();
         twentyMessageDto.setType(ChatMessageType.TWENTY_GAME_ERROR);
+        twentyMessageDto.setUsername(UserType.SYSTEM.username);
         twentyMessageDto.setContent(findUser.getUsername() + " 님 순서를 지켜주세요");
         twentyMessageDto.setCreatedAt(LocalDateTime.now().withNano(0));
 
@@ -43,6 +45,7 @@ public class TwentyGameExceptionHandler {
 
         TwentyMessageDto twentyMessageDto = new TwentyMessageDto();
         twentyMessageDto.setType(ChatMessageType.TWENTY_GAME_ERROR);
+        twentyMessageDto.setUsername(UserType.SYSTEM.username);
         twentyMessageDto.setContent(" 님 부정 질문");
         twentyMessageDto.setCreatedAt(LocalDateTime.now().withNano(0));
 

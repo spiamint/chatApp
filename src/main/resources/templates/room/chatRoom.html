@@ -494,7 +494,7 @@
               if (messageType == 'CHAT_TO_GPT') {
                   className = "chat-to-gpt-conversation"
               }
-              if (messageType == 'CHAT_FROM_GPT') {
+              if (messageType == 'CHAT_FROM_GPT' || messageType == 'GPT_ENTER' || messageType == 'GPT_LEAVE') {
                   className = "chat-from-gpt-conversation"
               }
               return className;

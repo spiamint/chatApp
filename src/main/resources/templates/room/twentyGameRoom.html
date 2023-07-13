@@ -269,9 +269,12 @@
 
           let currentQuestionCount = 0; // 메시지에 표시하기위해 작성됨
           let alivePlayerCount = 0; // START 에서 readyUserCount 대입 후, 오답자가 나올때 마다 --
+          let deadPlayerCount = 0; // 오답자가 나올때마다 ++, 내차례때 해당 값으로 alivePlayerCount 갱신(감소) 후 0으로 재초기화.
           let remainingOrderCount; // 내 차례까지 남은 횟수.
           // 내 첫차례 전 : myTwentyOrder - elapsedTurn
-          // 내 첫차례 후 : allUserCount - 1 - elapsedTurn
+          // 내 첫차례 후 : aliveUserCount - 1 - elapsedTurn
+          // 플레이어가 죽고나서, 내 차례가 되기 전에는 aliveUserCount 를 갱신하지 않아야 한다. (오답자와 남은사람수 관련 X)
+
           let elapsedTurn = 0; // 지난 턴 갯수
           let isMyFirstTurnElapsed = false; // 내가 첫 턴을 지났는지 여부. 내 첫 턴이 지났나에 따라 계산이 다름
 
@@ -603,7 +606,7 @@
                       currentQuestionCount++; // 질문 카운트 증가
                       if (responseMessage.twentyDeadUserId) {
                           // 오답자가 존재
-                          alivePlayerCount--; // 오답자로 인한 순서 보정
+                          deadPlayerCount++; // 오답자로 인한 순서 보정을 위해
                           // 현재 유저 오답자확인
                           isCurrentUserDead = responseMessage.twentyDeadUserId == currentUserId ? true : isCurrentUserDead; // 오답자확인
                           document.querySelector('.member-list-item[data-userid="' + responseMessage.twentyDeadUserId + '"] .member-is-twenty-alive').remove() // 오답자 생존마크 제거
@@ -658,6 +661,7 @@
           function processMyTurn() {
               // 상태처리
               elapsedTurn = 0; // 턴 지남 카운트 초기화
+              alivePlayerCount -= deadPlayerCount; // 오답자로 인한 생존자 보정
               isMyFirstTurnElapsed = true; // 내 첫 턴 지남 여부
 
               // 버튼처리

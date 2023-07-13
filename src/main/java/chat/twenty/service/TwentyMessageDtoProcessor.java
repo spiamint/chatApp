@@ -79,7 +79,6 @@ public class TwentyMessageDtoProcessor {
                 break;
             case TWENTY_GAME_ASK:
                 resultTwentyMessageDto = twentyService.proceedGame(roomId, userId, twentyMessageDto.getOrder());
-                resultTwentyMessageDto.setContent(resultTwentyMessageDto.getContent().replace("#&#", ""));
                 break;
             case TWENTY_GAME_ANSWER:
                 resultTwentyMessageDto = twentyService.proceedAnswer(roomId, twentyMessageDto);

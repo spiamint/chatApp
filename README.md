@@ -47,7 +47,7 @@ GPT 요청 질문 목록은 이전 질문을 포함하도록 설정되어 있습
 방장은 게임 시작 전, 임의의 플레이어 를 강퇴할 수 있습니다.
 
 #### 2.5 관전
-<img alt='twentyObserve' src='https://github.com/spiamint/chatApp/assets/122969954/77fdb83e-00d5-4621-931f-6445e3ca6c0a'>
+<img alt='twentyObserve' src='https://github.com/spiamint/chatApp/assets/122969954/aea313c7-7fa7-4264-bfe1-8f770714221b'>
 
 게임 도중에 입장한 유저는 자동으로 관전자가 되며, GPT 질문을 제외한 일반채팅을 할 수 있습니다.
 

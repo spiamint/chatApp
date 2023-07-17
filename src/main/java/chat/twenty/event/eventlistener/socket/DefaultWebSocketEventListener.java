@@ -44,7 +44,7 @@ public class DefaultWebSocketEventListener {
         Long roomId = getRoomId(connectMessage);
 
         User currentUser = getUserFromEvent(event);
-        Object nextEvent = subUrl.contains("chat") ?
+        StompWebsocketEvent nextEvent = subUrl.contains("chat") ?
                 new ChatConnectEvent(currentUser, roomId) : new TwentyConnectEvent(currentUser, roomId);
 
         eventPublisher.publishEvent(nextEvent);

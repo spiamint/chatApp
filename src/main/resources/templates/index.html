@@ -12,12 +12,16 @@
     <style>
 
         #indexHeader {
-            padding: 10px;
+            padding: 15px;
         }
 
         #indexHeader a {
             color: black;
             text-decoration: none;
+        }
+
+        #indexHeader a:hover {
+            border-bottom: solid 1px ;
         }
 
         h4 {
@@ -70,11 +74,11 @@
         /*]]>*/
 
         // 로깅
-        console.log('thErrorMessage : ' + thLoginErrorMessage + '\n'
-            + ', thNeedLogin : ' + thNeedLogin + '\n'
-            + 'thIsLoginError : ' + thIsLoginError + '\n'
-            + 'thLoginId : ' + thLoginId + '\n'
-            + 'thIsCreateRoomError : ' + thIsCreateRoomError);
+        // console.log('thErrorMessage : ' + thLoginErrorMessage + '\n'
+        //     + ', thNeedLogin : ' + thNeedLogin + '\n'
+        //     + 'thIsLoginError : ' + thIsLoginError + '\n'
+        //     + 'thLoginId : ' + thLoginId + '\n'
+        //     + 'thIsCreateRoomError : ' + thIsCreateRoomError);
 
         window.addEventListener('DOMContentLoaded', function () {
 
@@ -132,7 +136,7 @@
 
             // 방만들기 모달에서, 스무고개 옵션을 선택하면 스무고개 게임옵션지정창을 보이게 한다.
             function changeTwentyGameOptionWrapperDisplay(roomType) {
-                console.log('roomType: ' + roomType);
+                // console.log('roomType: ' + roomType);
 
                 let twentyGameOptionBox = document.getElementById('twentyGameOptionWrapper');
                 if (roomType === 'CHAT') {
@@ -160,7 +164,7 @@
 <body>
 <div class="container">
 
-    <h1 id="indexHeader"><a href="/">채팅 앱</a></h1>
+    <h1 id="indexHeader"><a href="/">채팅 with GPT</a></h1>
 
     <!-- 모달 트리거 -->
     <button sec:authorize="isAnonymous()"
@@ -223,7 +227,7 @@
     <button id="createRoomModalTriggerBtn" type="button" class="btn btn-outline-primary"
             sec:authorize="isAuthenticated()"
             data-bs-toggle="modal" data-bs-target="#staticBackdrop">
-        방파기
+        방 만들기
     </button>
 
     <!-- Modal -->

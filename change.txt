@@ -42,6 +42,10 @@ master commit 5.1
     채팅 및 스무고개 gpt 응답 후처리 추가.
     gpt 요청처리에 불필요한 비동기 처리 삭제 및 gpt api 요청 재정의
 
+master commit 5.2
+    버그수정
+    리드미 추가
+
 
 
 

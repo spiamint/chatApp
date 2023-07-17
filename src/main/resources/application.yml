@@ -1,6 +1,6 @@
 spring:
   profiles:
-    active: local
+    active: deploy
     group:
         local: gpt, local-db
         deploy: gpt, eb-db

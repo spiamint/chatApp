@@ -9,8 +9,8 @@ import lombok.Getter;
 public enum UserType {
 
     ADMIN(1L, "admin"),             // 관리자
-    GPT(3L, "assistant"),                 // User 로써의 GPT
-    SYSTEM(4L, "system")            // GPT 질의를 위한 시스템유저
+    GPT(3L, "GPT"),                 // User 로써의 GPT
+    SYSTEM(4L, "System")            // GPT 질의를 위한 시스템유저
     ;
 
     public final Long id;          // DB 의 id

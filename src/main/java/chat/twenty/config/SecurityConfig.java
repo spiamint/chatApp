@@ -1,6 +1,5 @@
 package chat.twenty.config;
 
-import chat.twenty.auth.CustomAuthenticationFailureHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -23,7 +22,7 @@ public class SecurityConfig {
     @Bean // filter 체인을 component 방식으로 스프링 컨테이너가 관리
     public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
 
-        httpSecurity.csrf().disable(); // 나중에 csrf 토큰 사용해볼것.
+        httpSecurity.csrf().disable();
 
         httpSecurity.authorizeRequests()
                 .antMatchers("/chat/**").authenticated()

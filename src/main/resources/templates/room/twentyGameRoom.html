@@ -154,6 +154,7 @@
 
       .twenty-asking-conversation-input {
           border: green solid 3px;
+          border-radius: 5px;
       }
 
       .ban-member-button {
@@ -173,8 +174,8 @@
       let thCurrentMember = [[${currentMember}]];
       let thCurrentRoom = [[${chatRoom}]];
       /*]]>*/
-      console.log("thCurrentMember = {}", thCurrentMember);
-      console.log("thCurrentRoom = {}", thCurrentRoom);
+      // console.log("thCurrentMember = {}", thCurrentMember);
+      // console.log("thCurrentRoom = {}", thCurrentRoom);
 
       // STOMP 변수
       let stompClient = null;
@@ -291,7 +292,6 @@
           // eventListener =====================================================================================
 
           window.addEventListener("beforeunload", function (event) {
-              console.log('event.beforeunload');
               disconnect();
           });
 
@@ -345,7 +345,7 @@
 
               stompClient.connect(headers, function (frame) {
                   setConnected(true);  // 연결후 html 조정
-                  console.log('Connected: ' + frame);
+                  // console.log('Connected: ' + frame);
 
                   // 서버의 endpoint 에 연결 후 메시지 수신마다 콜백실행 (responseMessage 은 서버에서 전송한 메시지)
                   currentSubscription = stompClient.subscribe(subUrl, function (responseMessageDto) {
@@ -395,7 +395,6 @@
                   });
               }
               setConnected(false);
-              console.log("Disconnected");
           }
 
 // 연결 여부에 따라 입력 및 스타일 조정
@@ -475,8 +474,7 @@
            * 스무고개 GPT 에게 보내는 메시지의 타입이 TWENTY_GAME_ANSWER 인지 TWENTY_GAME_ASK 인지 결정
            */
           function determineSendGptMessageType(content) {
-              console.log(content)
-              console.log(content.includes("정답"));
+              // console.log(content)
               return content.includes("정답") ? 'TWENTY_GAME_ANSWER' : 'TWENTY_GAME_ASK';
           }
 
@@ -528,9 +526,6 @@
                       break;
 
                   case 'TWENTY_GAME_START':
-                      // GPT_PROCESSING 메시지 삭제
-                      document.querySelectorAll('.gpt-processing').forEach(item => item.remove());
-
                       // 상태처리
                       isPlaying = true;
                       initializeMemberListAlive(isPlaying); // 생존자 표시 초기화
@@ -552,9 +547,6 @@
                       break;
 
                   case 'TWENTY_GAME_END' :
-                      // GPT_PROCESSING 메시지 삭제
-                      document.querySelectorAll('.gpt-processing').forEach(item => item.remove());
-
                       // 상태처리
                       await syncMemberList(isPlaying, responseMessage.userId)// GAME END
                       isPlaying = false;
@@ -582,8 +574,6 @@
                       break;
 
                   case 'TWENTY_GAME_ERROR':
-                      // GPT_PROCESSING 메시지 삭제
-                      document.querySelectorAll('.gpt-processing').forEach(item => item.remove());
                       // GPT_PROCESSING 에서 disabled 한 현재차례 sendGptMessageBtn 활성화, nextUserId 는 갱신되지 않음.
                       currentUserId == nextUserId ? sendGptMessageBtn.disabled = false : true;
                       break;
@@ -598,9 +588,6 @@
                       break;
 
                   case 'TWENTY_FROM_GPT':
-                      // GPT_PROCESSING 메시지 삭제
-                      document.querySelectorAll('.gpt-processing').forEach(item => item.remove());
-
                       // 상태처리
                       await syncMemberList(isPlaying, responseMessage.userId); // TWENTY_FROM_GPT
                       currentQuestionCount++; // 질문 카운트 증가
@@ -620,7 +607,7 @@
                       } else if(isCurrentUserReady) {
                           processOtherTurn(); // 남의차례 + 내가 레디중(게임참가중) myTwentyOrder != -1 도 가능
                       } else {
-                          console.log('관전중');
+                          // 관전중
                       }
 
                       break;
@@ -639,8 +626,6 @@
                   default:
                       needShowMessage = false;
                       console.log("PROCESS MESSAGE DEFAULT CASE ============================", responseMessage);
-                      // GPT_PROCESSING 메시지 삭제 (보험)
-                      document.querySelectorAll('.gpt-processing').forEach(item => item.remove());
                       break;
               } //switch
 
@@ -725,7 +710,7 @@
               listHeader.classList.add('conversation-list-item-header');
               listBody.classList.add('conversation-list-item-body', colorClassName, conversationHighlightClassName);
 
-              username.textContent = chatMessage.username + ": ";
+              username.textContent = chatMessage.username;
               username.classList.add('conversation-list-item-username');
               listHeader.appendChild(username)
 
@@ -740,6 +725,11 @@
               listItem.appendChild(listHeader);
               listItem.appendChild(listBody);
               conversationList.appendChild(listItem);
+
+              if (chatMessage.userId == 3) {
+                  // GPT_PROCESSING 메시지 삭제
+                  document.querySelectorAll('.gpt-processing').forEach(item => item.remove());
+              }
 
               // 스크롤 최하단으로 이동
               conversationBox.scrollTop = conversationWrapper.offsetHeight;
@@ -802,7 +792,7 @@
           async function initializeMemberList() {
 
               const response = await fetchMemberList();
-              console.log('initializeMemberList()', response);
+              // console.log('initializeMemberList()', response);
               responseMemberList = response.memberList;
 
               allUserCount = responseMemberList.length;
@@ -839,7 +829,7 @@
 
               const response = await fetchMemberList(); // 멤버리스트를 반환하는것을 대기.
 
-              console.log(response);
+              // console.log(response);
               responseMemberList = response.memberList;
 
               let modifiedMemberListItem = null; // htmlCollection
@@ -854,7 +844,7 @@
                   }
               }
 
-              console.log(modifiedMemberListItem);
+              // console.log(modifiedMemberListItem);
 
               // 서버에서 받은 responseMemberList 순회
               responseMemberList.forEach(responseMember => {
@@ -869,7 +859,7 @@
                   readyUserCount = responseMember.isTwentyGameReady ? ++readyUserCount : readyUserCount;
               });
 
-              console.log("readyUserCount : " + readyUserCount);
+              // console.log("readyUserCount : " + readyUserCount);
 
               // memberList 그리기
               // CHAT_FROM_GPT 에서는, userId 가 GPT 의 id 이기 때문에, 갱신되지 않는다.
@@ -958,7 +948,6 @@
 
           function changeReadyBtnStyle(isCurrentUserReady) {
               if (isCurrentUserReady == true) {
-                  console.log('change isReady : ' + isCurrentUserReady)
                   // 준비하기(readyBtn) 클릭, 준비됨(unReadyBtn) 으로 변경
                   readyBtn.style.display = 'none';
                   unReadyBtn.style.display = 'block';
@@ -1039,17 +1028,17 @@
                 1. 방장은 게임 시작 버튼을 눌러 게임을 시작합니다.
               </li>
               <li class="list-group-item">
-                2. 게임 시작시 일반채팅과 질문을 동시에 진행가능.<br>
-                이때, 메시지 입력후 Enter 누르면 일반채팅, Shift + Enter 누르면 질문으로 전송됨
+                2. 자신의 차례에만 GPT 에게 질문 할 수 있습니다.<br>
+                메시지 입력후 Enter 누르면 일반채팅, <br>
+                Shift + Enter 누르면 질문으로 전송됩니다.
               </li>
               <li class="list-group-item">
-                3. 메시지에 "정답" 단어를 포함하여 질문을 전송해야 정답여부를 확인함.<br>
-                정답 여부는 한번만 확인하며, 틀리면 사망함.
+                3. 메시지에 "정답" 을 포함하여 질문하면, 정답 여부를 확인합니다.<br>
+                정답 여부는 한번만 확인하며, 틀리면 해당 유저는 이후 질문할 수 없습니다.
               </li>
               <li class="list-group-item">
-                4. 게임 도중 유저가 퇴장하면 즉시 게임이 종료됨.
+                4. 게임 도중 유저가 퇴장하면 즉시 게임이 종료됩니다.
               </li>
-              <li class="list-group-item">
             </ul>
           </div>
 

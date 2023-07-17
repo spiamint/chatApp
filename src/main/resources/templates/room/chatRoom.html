@@ -191,7 +191,7 @@
           // thCurrentMember 는 방장이 아닌 일반유저의 경우, 방 첫 입장때 null 이다.
           let isCurrentUserRoomOwner =
               thCurrentMember ? thCurrentMember.isRoomOwner : false; // 내가 방장인지 여부
-          console.log("thCurrentMember = {}", thCurrentMember);
+          // console.log("thCurrentMember = {}", thCurrentMember);
 
           // 필요시 초기화될 변수
           let isGptOwner = false;   // gpt ACTIVATE 시킨 사람인지 여부
@@ -203,8 +203,7 @@
 
           // eventListener =====================================================================================
 
-          window.addEventListener("beforeunload", function (event) {
-              console.log('event.beforeunload');
+          window.addEventListener("beforeunload", function () {
               disconnect();
           });
 
@@ -251,7 +250,7 @@
 
               stompClient.connect(headers, function (frame) {
                   setConnected(true);  // 연결후 html 조정
-                  console.log('Connected: ' + frame);
+                  // console.log('Connected: ' + frame);
 
                   // 서버의 endpoint 에 연결
                   currentSubscription = stompClient.subscribe(subUrl, function (responseMessageDto) {
@@ -282,7 +281,6 @@
                   });
               }
               setConnected(false);
-              console.log("Disconnected");
           }
 
           // 연결 여부에 따라 입력 및 스타일 조정
@@ -367,16 +365,12 @@
                       break;
                   case 'GPT_ENTER':
                       await syncMemberList(responseMessage.userId); // 멤버창 갱신
-                      // GPT_PROCESSING 메시지 삭제
-                      document.querySelectorAll('.gpt-processing').forEach(item => item.remove());
 
                       sendGptMessageBtn.style.display = 'block';
                       sendGptMessageBtn.disabled = false;
                       break;
                   case 'GPT_LEAVE':
                       await syncMemberList(responseMessage.userId); // 멤버창 갱신
-                      // GPT_PROCESSING 메시지 삭제
-                      document.querySelectorAll('.gpt-processing').forEach(item => item.remove());
 
                       // 상태처리
                       currentGptUuid = '';
@@ -397,8 +391,6 @@
                   case 'CHAT_TO_GPT':
                       break;
                   case 'CHAT_FROM_GPT':
-                      // GPT_PROCESSING 메시지 삭제
-                      document.querySelectorAll('.gpt-processing').forEach(item => item.remove());
 
                       // gpt 답변 생성 완료
                       sendGptMessageBtn.style.display = 'block'; // 중간에 들어온 사람이 있을 수 있으므로, 다시 보이게 처리
@@ -409,9 +401,7 @@
                       location.replace('/');
                       break;
                   default:
-                      console.log("PROCESS MESSAGE DEFAULT CASE ============================", responseMessage);
-                      // GPT_PROCESSING 메시지 삭제 (보험)
-                      document.querySelectorAll('.gpt-processing').forEach(item => item.remove());
+                      // console.log("PROCESS MESSAGE DEFAULT CASE ============================", responseMessage);
                       needShowMessage = false;
                       break;
               }
@@ -450,7 +440,7 @@
               listHeader.classList.add('conversation-list-item-header');
               listBody.classList.add('conversation-list-item-body', colorClassName, conversationHighlightClassName);
 
-              username.textContent = chatMessage.username + ": ";
+              username.textContent = chatMessage.username;
               username.classList.add('conversation-list-item-username');
               listHeader.appendChild(username)
 
@@ -465,6 +455,11 @@
               listItem.appendChild(listHeader);
               listItem.appendChild(listBody);
               conversationList.appendChild(listItem);
+
+              if (chatMessage.userId == 3) {
+                  // 'GPT 답변 생성중' 메시지 삭제
+                  document.querySelectorAll('.gpt-processing').forEach(item => item.remove());
+              }
 
               // 스크롤 최하단으로 이동
               conversationBox.scrollTop = conversationWrapper.offsetHeight;
@@ -517,7 +512,7 @@
 
               const formattedDateTime = `${year}-${month}-${day} ${hour}:${minute}:${second}`; // "yy-MM-dd HH:mm:ss" 형태로 포맷팅합니다.
 
-              console.log(formattedDateTime); // 예시 출력: "23-06-07 16:23:47"
+              // console.log(formattedDateTime); // 예시 출력: "23-06-07 16:23:47"
               return formattedDateTime;
           }
 
@@ -532,7 +527,7 @@
           async function initializeMemberList() {
 
               const response = await fetchMemberList();
-              console.log(response);
+              // console.log(response);
               let responseMemberList = response.memberList;
 
               // 서버에서 받은 responseMemberList 순회
@@ -550,7 +545,7 @@
               if (responseMessageUserId == 0 || responseMessageUserId == null) return;
 
               const response = await fetchMemberList();
-              console.log(response);
+              // console.log(response);
               let responseMemberList = response.memberList;
 
               let modifiedMemberListItem = null; // htmlCollection

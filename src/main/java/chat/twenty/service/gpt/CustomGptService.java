@@ -183,9 +183,9 @@ public class CustomGptService {
      */
     protected String determineRole(long id) {
         if (id == UserType.GPT.getId()) {
-            return UserType.GPT.getUsername(); // assistant
+            return "assistant";
         } else if (id == UserType.SYSTEM.getId()) {
-            return UserType.SYSTEM.getUsername(); // system
+            return "system";
         } else {
             return "user";
         }

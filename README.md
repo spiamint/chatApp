@@ -13,7 +13,7 @@ ___샘플 ID: sample / PW: sample123___ , 자유롭게 이용 가능합니다.
 * AWS ElasticBeanstalk
 
 ## 1. 일반채팅
-#### 1.0 데모 영상
+#### 1.0 데모 영상 (유튜브)
 [![Video Label](http://img.youtube.com/vi/_226vM3Djz8/0.jpg)](https://youtu.be/_226vM3Djz8)
 #### 1.1 채팅
 <img width="48%" alt='normalChat' src='https://github.com/spiamint/chatApp/assets/122969954/107bc772-df30-41bd-ad9e-69f2720d54bc'>
@@ -29,7 +29,7 @@ GPT 를 종료할 권한은 활성화 한 유저가 가지며, 활성화 하지 
 GPT 요청 질문 목록은 이전 질문을 포함하도록 설정되어 있습니다.
 
 ## 2. 스무고개
-#### 2.0 데모 영상
+#### 2.0 데모 영상 (유튜브)
 [![Video Label](http://img.youtube.com/vi/YqRH595rA_0/0.jpg)](https://youtu.be/YqRH595rA_0)
 #### 2.1 준비하기
 플레이어는 '준비하기' 버튼을 눌러 게임에 참가 할 수 있습니다.

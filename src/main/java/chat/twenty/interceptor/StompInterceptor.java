@@ -19,7 +19,25 @@ public class StompInterceptor implements ChannelInterceptor {
      */
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
-        // 참고) log 응답
+//        log.info("preSend() message = {} / channel = {} ", message, channel);
+
+        // message.headers
+        StompHeaderAccessor accessor = StompHeaderAccessor.wrap(message);
+
+        // connect() 할때 simpSessionAttributes 에 roomId, subUrl 저장
+        Boolean containsNativeHeader = Boolean.valueOf(accessor.getFirstNativeHeader("containsNativeHeader"));
+        if (containsNativeHeader) {
+            Map<String, String> attributeMap = Map.of(
+                    "roomId", accessor.getFirstNativeHeader("currentRoomId"),
+                    "subUrl", accessor.getFirstNativeHeader("subUrl")
+            );
+            accessor.getSessionAttributes().putAll(attributeMap);
+        }
+
+        return message;
+    }
+
+    // 참고) log.info("preSend() message = {} / channel = {} ", message, channel); 로그
         /*
         message = GenericMessage [payload=byte[0],
             headers={simpMessageType=CONNECT, stompCommand=CONNECT, nativeHeaders={accept-version=[1.1,1.0], heart-beat=[10000,10000]}, simpSessionAttributes={}, simpHeartbeat=[J@3a801940, simpSessionId=gdrrtvjy}]
@@ -40,24 +58,4 @@ public class StompInterceptor implements ChannelInterceptor {
             headers={simpMessageType=DISCONNECT, stompCommand=DISCONNECT, simpSessionAttributes={}, simpSessionId=gdrrtvjy}]
             / channel = ExecutorSubscribableChannel[clientInboundChannel]
          */
-//        log.info("preSend() message = {} / channel = {} ", message, channel);
-
-        // message.headers
-        StompHeaderAccessor accessor = StompHeaderAccessor.wrap(message);
-
-        // connect() 할때 simpSessionAttributes 에 roomId, subUrl 저장
-        Boolean containsNativeHeader = Boolean.valueOf(accessor.getFirstNativeHeader("containsNativeHeader"));
-        if (containsNativeHeader) {
-            Map<String, String> attributeMap = Map.of(
-                    "roomId", accessor.getFirstNativeHeader("currentRoomId"),
-                    "subUrl", accessor.getFirstNativeHeader("subUrl")
-            );
-            accessor.getSessionAttributes().putAll(attributeMap);
-        }
-//
-//        // 조작한 header 로 message 재생성
-//        Message<?> resultMessage = MessageBuilder.createMessage(message.getPayload(), accessor.getMessageHeaders());
-//        log.info("preSend() result  = {}", resultMessage);
-        return message;
-    }
 }

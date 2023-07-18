@@ -9,7 +9,6 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 public class ChatRoom {
-
     private Long id;                    // chatroom id
     private String name;                // chatroom 이름
     private ChatRoomType type;          // chatroom 타입

@@ -26,7 +26,6 @@ public class TwentyController {
 
     private final RoomMemberService memberService;
     private final TwentyMessageDtoProcessor twentyMessageDtoProcessor;
-
     private final SimpMessagingTemplate messageTemplate;
 
 
@@ -38,30 +37,21 @@ public class TwentyController {
         // simpSessionAttributes 는 ConcurrentHashMap<String, Object> attributes 이지만, <String, String> 으로 받아도 에러가 나지 않는다...
         log.info("handleChat() messageDto = {} currentRoomId = {} simpSessionAttributes = {}, attr class = {}", twentyMessageDto, currentRoomId, simpSessionAttributes, simpSessionAttributes.getClass().getName());
 
-        /**
-         * flow 를
-         * 1. MessageDto -> Message 변환 및 나머지 필드 입력
-         * 2. Message 를 DB 에 저장
-         * 3. MessageDto 타입별 처리
-         * 4. MessageDto 를 다시 전송
-         *  4.1 GPT 질문 처리
-         */
-
         // 메시지 타입별 처리
         TwentyMessageDto resultTwentyMessageDto = twentyMessageDtoProcessor.processMessage(twentyMessageDto);
 
         // 메시지 처리 결과 되돌려주기
         messageTemplate.convertAndSend("/topic/twenty-game/" + currentRoomId, resultTwentyMessageDto);
 
-        // GameValidate 오류
+        // gameStartValidate 오류
         if (resultTwentyMessageDto.isTwentyStart()) return;
 
         // GPT 처리 없음.
         if (!resultTwentyMessageDto.getType().needGptProcess()) return;
 
         // GPT  ==================================================================
-
-        // GPT PROCESSING 메시지를 gptType = processing 이랑 ChatMEssageType = GPT_PROCESSING 혼재중. 반드시 수정할것
+        
+        // GPT 처리중 메시지 전송
         messageTemplate.convertAndSend("/topic/twenty-game/" + currentRoomId, TwentyMessageDto.createGptProcessingMessage());
 
         // GPT 질문 처리

@@ -46,6 +46,12 @@ master commit 5.2
     버그수정
     리드미 추가
 
+master commit 5.3
+    csrf 토큰 활성화
+    뷰 정리 및 로그 주석
+    http 로그 추가
+
+
 
 
 

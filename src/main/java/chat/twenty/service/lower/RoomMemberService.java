@@ -18,7 +18,6 @@ public class RoomMemberService {
     private final UserRepository userRepository; // username 사용
 
     // public
-
     public RoomMember findById(Long roomId, Long userId) {
         return repository.findById(roomId, userId);
     }
@@ -32,13 +31,15 @@ public class RoomMemberService {
     public List<RoomMember> findIsTwentyReadyMemberByRoomId(Long roomId) {
         return repository.findIsTwentyReadyMemberByRoomId(roomId);
     }
+    public String findGptUuidByRoomId(Long roomId) {
+        return repository.findGptUuidByRoomId(roomId).orElse(null);
+    }
     public int countRoomMember(Long roomId) {
         return repository.countMemberByRoomId(roomId);
     }
     public int countTwentyReadyMemberByRoomId(Long roomId) {
         return repository.countTwentyReadyMemberByRoomId(roomId);
     }
-
     public int countConnectedMember(Long roomId) {
         return repository.countIsRoomConnectedMemberByRoomId(roomId);
     }
@@ -46,7 +47,6 @@ public class RoomMemberService {
     public void enterRoom(Long roomId, Long userId) {
         save(roomId, userId);
     }
-
     /**
      * (방 생성 후,) 방장으로서 방에 입장 (연결X)
      */
@@ -58,8 +58,6 @@ public class RoomMemberService {
     public void leaveRoom(Long roomId, Long userId) {
         delete(roomId, userId);
     }
-
-
     public void leaveRoomAllMember(Long roomId) {
         deleteByRoomId(roomId);
     }
@@ -67,15 +65,12 @@ public class RoomMemberService {
     public void updateRoomConnected(Long roomId, Long userId, boolean roomConnected) {
         repository.updateIsRoomConnected(roomId, userId, roomConnected);
     }
-
     public void updateRoomOwner(Long roomId, Long userId, boolean roomOwner) {
         repository.updateIsRoomOwner(roomId, userId, roomOwner);
     }
-
     public void updateGptUuid(Long roomId, Long userId, String gptUuid) {
         repository.updateGptUuid(roomId, userId, gptUuid);
     }
-
     /**
      * gptOwner 를 update 한 user 의 id 를 반환
      */
@@ -84,26 +79,18 @@ public class RoomMemberService {
         return userId;
     }
 
-    public String findGptUuidByRoomId(Long roomId) {
-        return repository.findGptUuidByRoomId(roomId).orElse(null);
-    }
-
     public boolean twentyReady(Long roomId, Long userId) {
         return updateTwentyReady(roomId, userId, true) == 1;
     }
-
     public boolean twentyUnready(Long roomId, Long userId) {
         return updateTwentyReady(roomId, userId, false) == 1;
     }
-
     public void twentyUnreadyAllMember(Long roomId) {
         repository.updateIsTwentyReadyByRoomId(roomId, false);
     }
-
     public boolean isTwentyAllReady(Long roomId) {
         return countTwentyReadyMemberByRoomId(roomId) == countRoomMember(roomId);
     }
-
 
     // protected =======================================================================================
 

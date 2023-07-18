@@ -6,6 +6,7 @@ import lombok.ToString;
 
 /**
  * 스무고개 게임에서 RoomMember 의 상태를 관리
+ * 게임 시작시 생성, 게임 종료시 삭제됨.
  */
 @Getter @ToString @EqualsAndHashCode
 public class TwentyMemberInfo {

@@ -161,6 +161,7 @@
 <h1> 회원가입 </h1>
 
 <form th:action method="post" th:object="${userAddForm}" id="userAddForm" class="form">
+  <input type="hidden" name="_csrf" th:value="${_csrf.token}"/>
 
   <label for="loginIdInput" class="col">로그인 ID </label>
   <div class="input-wrapper">

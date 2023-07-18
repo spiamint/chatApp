@@ -10,26 +10,20 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Map;
 
 @Slf4j
 @Getter @ToString
 @RequiredArgsConstructor
 /**
- * SpringSecurity 일반 유저와 OAuth2 유저 정보를 모두 담을수 있는 클래스.
- * Authentication - PrincipalDetails - Member
+ * SpringSecurity UserDetails 구현체
  */
 public class PrincipalDetails implements UserDetails {
 
     private final User user;
-    
-    // OAuth2User.getAttributes() 로 받은 정보
-    private final Map<String, Object> attributes;
     private final Long id;
 
     public PrincipalDetails(User user) {
         this.user = user;
-        this.attributes = null;
         this.id = user.getId();
     }
 
@@ -61,8 +55,6 @@ public class PrincipalDetails implements UserDetails {
     public String getUsername() {
         return user.getUsername();
     }
-
-    public String getEmail() { return "Email";}
 
     @Override
     public boolean isAccountNonExpired() {

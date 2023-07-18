@@ -1,7 +1,7 @@
 package chat.twenty.dto;
 
-import chat.twenty.domain.UserType;
 import chat.twenty.enums.ChatMessageType;
+import chat.twenty.enums.UserType;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -97,29 +97,6 @@ public class ChatMessageDto {
 
         return gptAnswerMessage;
     }
-
-    public ChatMessageDto(String username, String content, ChatMessageType type) {
-        this.username = username;
-        this.content = content;
-        this.createdAt = LocalDateTime.now().withNano(0);
-        this.type = type;
-    }
-
-    public ChatMessageDto(String gptResponse) {
-        this.username = "GPT";
-        this.content = gptResponse;
-        this.createdAt = LocalDateTime.now().withNano(0);
-    }
-
-    /**
-     * from system, 작업 성공여부 (개선필요)
-     */
-    public ChatMessageDto(ChatMessageType type) {
-        this.username = "system";
-        this.content = "from system";
-        this.type = type;
-    }
-
 }
 
 

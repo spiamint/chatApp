@@ -22,7 +22,7 @@ public class SecurityConfig {
     @Bean // filter 체인을 component 방식으로 스프링 컨테이너가 관리
     public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
 
-        httpSecurity.csrf().disable();
+//        httpSecurity.csrf().disable(); // csrf 토큰 비활성화
 
         httpSecurity.authorizeRequests()
                 .antMatchers("/chat/**").authenticated()
@@ -44,7 +44,6 @@ public class SecurityConfig {
                 .permitAll()
                 .logoutUrl("/logout")
                 .logoutSuccessUrl("/")
-                .deleteCookies("JSESSIONID")
                 .invalidateHttpSession(true)
                 .clearAuthentication(true);
 

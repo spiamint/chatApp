@@ -38,7 +38,6 @@ public class CustomAuthenticationFailureHandler extends SimpleUrlAuthenticationF
             // 자격 증명 실패
             errorMessage = "아이디 또는 비밀번호가 맞지 않습니다.";
         } else if (exception instanceof UsernameNotFoundException) {
-            // 이거만 일단 로그 찍기 (로그인시 간헐적으로 발생)
             log.info("CustomAuthenticationFailureHandler.onAuthenticationFailure() exception instanceof UsernameNotFoundException, loginId={}, e.message={}", loginId, exception.getMessage());
             // ID 를 찾을 수 없음
             errorMessage = "계정이 존재하지 않습니다.";

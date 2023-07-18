@@ -1,6 +1,7 @@
 package chat.twenty.domain;
 
 import chat.twenty.enums.ChatMessageType;
+import chat.twenty.enums.UserType;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
@@ -11,13 +12,6 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @SuperBuilder
 public class ChatMessage extends BaseMessage{
-//    private Long id;        // auto_increment
-//    private Long roomId;
-//    private Long userId;
-//    private String username;    // 조회를 줄이기 위해 username 필드 추가.
-//    private ChatMessageType type;       // DB DEFAULT NONE
-//    private String content;
-//    private LocalDateTime createdAt;  // DB DEFAULT CURRENT_TIMESTAMP
     private boolean isGptChat;      // Gpt 와의 대화인지 여부, DB DEFAULT false
     private String gptUuid;    // GPT activate 시의 세션구분. UUID(8)
 

@@ -59,15 +59,9 @@ public class UserService {
      * @return 존재하면(중복이면) true 반환
      */
     public boolean duplicateCheck(String option, String param) {
-        Optional<User> result;
-
-        if (option.equals("username")) {
-            result = repository.findByUsername(param);
-        } else {
-            result = repository.findByLoginId(param);
-        }
-
-        return result.isPresent();
+        return "username".equals(option) ?
+                repository.findByUsername(param).isPresent() :
+                repository.findByLoginId(param).isPresent();
     }
 
 }

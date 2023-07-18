@@ -53,7 +53,7 @@ public class IndexController {
         if (isBanned) {
             model.addAttribute("alertMessage", "방장에 의해 강퇴되었습니다.");
         } else if (isRoomDeleted) {
-            model.addAttribute("alertMessage", "방장에 의해 방이 삭제되었습니다.");
+            model.addAttribute("alertMessage", "방장에 의해 삭제되었거나, 존재하지 않는 방 입니다.");
         } if (needLogin) {
             model.addAttribute("needLogin", true);
         }
@@ -100,12 +100,14 @@ public class IndexController {
     @GetMapping("/room/{roomId}")
     public String enterRoom(@PathVariable Long roomId, Model model,
                             @AuthenticationPrincipal PrincipalDetails principalDetails) throws InterruptedException {
-
         log.info("enterRoom() roomId = {}", roomId);
         Thread.sleep(100); // EventListener 작업 대기 (LEAVE WHILE PLAYING 등)
 
         // room 정보 불러오기
         ChatRoom currentRoom = roomService.findById(roomId);
+        if (currentRoom == null) {
+            return "redirect:/?isRoomDeleted=true"; // room 없음
+        }
         model.addAttribute("chatRoom", currentRoom);
 
         // Member 정보 불러오기
@@ -118,7 +120,6 @@ public class IndexController {
         model.addAttribute("currentMember", findMember);
 
         ChatRoomType currentRoomType = currentRoom.getType();
-
         if (currentRoomType == ChatRoomType.CHAT) {
             return "room/chatRoom";
         } else {

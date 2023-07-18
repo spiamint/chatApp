@@ -1,8 +1,8 @@
 package chat.twenty.dto;
 
 import chat.twenty.domain.TwentyMemberInfo;
-import chat.twenty.domain.UserType;
 import chat.twenty.enums.ChatMessageType;
+import chat.twenty.enums.UserType;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.NoArgsConstructor;

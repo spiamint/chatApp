@@ -12,7 +12,6 @@ import java.util.List;
 @RequiredArgsConstructor
 @Slf4j
 public class TwentyMessageService {
-
     private final TwentyMessageRepository twentyMessageRepository;
 
     public TwentyMessage saveMessage(TwentyMessage twentyMessage) {

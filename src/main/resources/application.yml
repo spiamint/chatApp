@@ -1,11 +1,13 @@
 spring:
   profiles:
-    active: deploy
+    active: local
     group:
         local: gpt, local-db
         deploy: gpt, eb-db
   thymeleaf:
     prefix: classpath:/templates/   #spring.mvc.static-path-pattern=/static/**
+    servlet:
+      produce-partial-output-while-processing: false # csrf 토큰 삽입을 위해, 타임리프의 결과반환을 미룸.
   messages:
     basename: errorMessage
 

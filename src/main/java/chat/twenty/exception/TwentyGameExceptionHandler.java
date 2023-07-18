@@ -1,9 +1,9 @@
 package chat.twenty.exception;
 
 import chat.twenty.domain.User;
-import chat.twenty.domain.UserType;
 import chat.twenty.dto.TwentyMessageDto;
 import chat.twenty.enums.ChatMessageType;
+import chat.twenty.enums.UserType;
 import chat.twenty.service.lower.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

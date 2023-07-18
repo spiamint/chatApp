@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Chat WebSocket</title>
+    <title>채팅 with GPT</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.4.0/sockjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet"
@@ -148,15 +148,6 @@
                 }
             }
 
-            // // 방만들기 모달에서, 채팅방을 선택하고 만들기 했을때, 에러가 나서 다시 돌아오면,
-            // // customSubject 가 blank 로 넘어가서 validation 에 걸려 is-invalid 가 붙는다.
-            // // 그래서, 값을 입력하면 is-invalid 를 바로 떼준다.
-            // document.getElementById('customTwentyGameSubject').addEventListener('input', function () {
-            //     if (this.classList.contains('is-invalid')) {
-            //         this.classList.remove('is-invalid');
-            //     }
-            // })
-
         }); // DOMContentLoaded
 
     </script>
@@ -171,10 +162,16 @@
         id="loginModalTriggerBtn" type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#loginModal">
         로그인
     </button>
-    <button sec:authorize="isAuthenticated()"
-            type="button" class="btn btn-outline-primary" onclick="location.href='/logout'">
+    <button id="logoutBtn" sec:authorize="isAuthenticated()"
+            type="button" class="btn btn-outline-primary" onclick="javascript:logout()">
         로그아웃
     </button>
+    <form id="logoutForm" method="POST" action="/logout" style="display: none">
+        <input type="hidden" name="_csrf" th:value="${_csrf.token}"/>
+    </form>
+    <script>
+        function logout() { document.getElementById('logoutForm').submit(); }
+    </script>
     <button sec:authorize="isAnonymous()"
         id="addUserBtn" type="button" class="btn btn-outline-primary" onclick="location.href = '/user/add'">
         회원가입
@@ -190,7 +187,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
 
-                <form action="/loginProc" method="post">
+                <form th:action="@{/loginProc}" method="post">
                     <div class="modal-body">
                         <label for="loginId">로그인 ID</label>
                         <input type="text" id="loginId" class="form-control" name="loginId" placeholder="로그인 Id 입력"/>
@@ -199,6 +196,7 @@
                         <div th:if="${isLoginError == true}">
                             <p id="loginErrorMessage" class="field-error" th:text="${loginErrorMessage}">로그인 오류 메시지</p>
                         </div>
+                        <input type="hidden" name="_csrf" th:value="${_csrf.token}"/>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
@@ -239,6 +237,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <form action="/room" method="post" th:object="${roomAddForm}" id="roomAddForm">
+                    <input type="hidden" name="_csrf" th:value="${_csrf.token}"/>
                     <div class="modal-body">
 
                         <label for="twentyRoomName">방 이름</label>
@@ -280,7 +279,7 @@
         </div>
     </div>
 
-    <h4>roomList</h4>
+    <h4>방 목록</h4>
     <ul id="roomList" class="list-group">
         <li class="list-group-item d-flex justify-content-between align-items-start room-list-item"
             th:each="room : ${roomList}">

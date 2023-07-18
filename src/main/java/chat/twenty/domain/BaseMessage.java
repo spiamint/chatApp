@@ -1,6 +1,7 @@
 package chat.twenty.domain;
 
 import chat.twenty.enums.ChatMessageType;
+import chat.twenty.enums.UserType;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 

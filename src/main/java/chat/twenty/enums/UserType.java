@@ -1,4 +1,4 @@
-package chat.twenty.domain;
+package chat.twenty.enums;
 
 import lombok.Getter;
 

@@ -55,9 +55,4 @@ public enum ChatMessageType {
  * TWENTY_GAME_ANSWER 사용이유
  *      user 가 마구잡이로 정답은 XX 야 라고 여러번 보내버리면, 생성형 AI 의 특성인지 모르겟지만
  *      지맘대로 정답으로 인정해버림. 따라서 ANSWER 횟수를 제한하기위해 사용
- *
- * TWENTY_GAME_SKIP 사용이유
- *      alive = false 유저가 있을때, 순서가 꼬이게 되는데 이를 서버에서 일일히 보정하기 어려워서
- *      그냥 클라이언트에서 자동으로 메시지를 보내게 하고, validateAlive 에서 거른뒤 SKIP 메시지 보내기로함.
- *      이러면 순서에 영향X
  */

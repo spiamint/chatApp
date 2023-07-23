@@ -727,8 +727,8 @@
               listItem.appendChild(listBody);
               conversationList.appendChild(listItem);
 
-              if (chatMessage.userId == 3) {
-                  // GPT_PROCESSING 메시지 삭제
+              if (chatMessage.userId == 3 || chatMessage.type == 'TWENTY_GAME_END') {
+                  // GPT_PROCESSING 메시지 삭제 (GAME_END 는 보낸사람이 System 인경우가 있음)
                   document.querySelectorAll('.gpt-processing').forEach(item => item.remove());
               }
 

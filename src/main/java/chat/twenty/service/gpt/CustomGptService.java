@@ -13,6 +13,7 @@ import chat.twenty.service.lower.ChatRoomService;
 import chat.twenty.service.lower.RoomMemberService;
 import chat.twenty.service.lower.TwentyMessageService;
 import io.github.flashvayne.chatgpt.dto.chat.MultiChatMessage;
+import io.github.flashvayne.chatgpt.exception.ChatgptException;
 import io.github.flashvayne.chatgpt.service.ChatgptService;
 import io.netty.channel.ConnectTimeoutException;
 import lombok.RequiredArgsConstructor;
@@ -208,7 +209,9 @@ public class CustomGptService {
             // GPT response Error
             log.info("askMultiChatGpt ServiceUnavailable. e = {},\n message = {}, gptUuid = {}", e, e.getMessage(), gptUuid);
             gptResponse = "GPT 서버가 현재 과부하상태(overloaded) 입니다. 잠시후 다시 시도해주세요";
-
+        } catch (ChatgptException e) {
+            log.info("askMultiChatGpt ChatgptException e = {},\n message = {}, gptUuid = {}", e, e.getMessage(), gptUuid);
+            gptResponse = "GPT 응답에 문제가 발생했습니다. 다시 시도해주세요"; // response statusCode != HttpStatus.OK
         } catch (ResourceAccessException e) {
             log.info("askMultiChatGpt ResourceAccessException e = {},\n message = {}, rootCause ={} gptUuid = {}", e, e.getMessage(), e.getRootCause(), gptUuid);
             if (e.getRootCause() instanceof SocketTimeoutException || e.getRootCause() instanceof ConnectTimeoutException)

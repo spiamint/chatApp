@@ -35,7 +35,6 @@ dependencies {
     testImplementation("org.projectlombok:lombok:1.18.22")
     compileOnly("org.projectlombok:lombok")
 	developmentOnly("org.springframework.boot:spring-boot-devtools")
-	annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
 	annotationProcessor("org.projectlombok:lombok")
 	testAnnotationProcessor("org.projectlombok:lombok")
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
@@ -78,6 +77,9 @@ dependencies {
 
 	// https://mvnrepository.com/artifact/org.apache.httpcomponents/httpclient for RestTemplate
 	implementation("org.apache.httpcomponents:httpclient:4.5.13")
+
+	annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
+
 
 
 

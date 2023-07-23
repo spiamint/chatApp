@@ -4,6 +4,7 @@ import chat.twenty.domain.TwentyMemberInfo;
 import chat.twenty.enums.ChatMessageType;
 import chat.twenty.enums.UserType;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -16,6 +17,7 @@ import java.util.List;
 
 @Data
 @NoArgsConstructor
+@AllArgsConstructor
 public class TwentyMessageDto {
     private Long roomId;
     private Long userId;
@@ -88,15 +90,15 @@ public class TwentyMessageDto {
      * GPT 의 스무고개 답변 메시지 생성
      */
     public static TwentyMessageDto createGptAnswerMessage(Long roomId, String gptUuid, String gptResponse) {
-        TwentyMessageDto gptAnswerMessage = new TwentyMessageDto();
-        gptAnswerMessage.setRoomId(roomId);
-        gptAnswerMessage.setContent(gptResponse);
-        gptAnswerMessage.setGptUuid(gptUuid);
+            TwentyMessageDto gptAnswerMessage = new TwentyMessageDto();
+            gptAnswerMessage.setRoomId(roomId);
+            gptAnswerMessage.setContent(gptResponse);
+            gptAnswerMessage.setGptUuid(gptUuid);
 
-        gptAnswerMessage.setUserId(UserType.GPT.id);
-        gptAnswerMessage.setUsername(UserType.GPT.username);
-        gptAnswerMessage.setType(ChatMessageType.TWENTY_FROM_GPT);
-        gptAnswerMessage.setGptChat(true);
+            gptAnswerMessage.setUserId(UserType.GPT.id);
+            gptAnswerMessage.setUsername(UserType.GPT.username);
+            gptAnswerMessage.setType(ChatMessageType.TWENTY_FROM_GPT);
+            gptAnswerMessage.setGptChat(true);
         // 시간은 DB 저장시 초기화
         return gptAnswerMessage;
     }

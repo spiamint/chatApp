@@ -1,6 +1,7 @@
 package chat.twenty.auth;
 
 import chat.twenty.domain.User;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
@@ -12,7 +13,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 @Slf4j
-@Getter @ToString
+@Getter @ToString @EqualsAndHashCode
 @RequiredArgsConstructor
 /**
  * SpringSecurity UserDetails 구현체

@@ -19,10 +19,18 @@ public class SecurityConfig {
     @Bean
     public BCryptPasswordEncoder pwEncoder() { return new BCryptPasswordEncoder(); }
 
-    @Bean // filter 체인을 component 방식으로 스프링 컨테이너가 관리
+    @Bean // filter 체인을 스프링 컨테이너에 등록
     public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
+        httpSecurity
 
-        httpSecurity.authorizeRequests()
+                .sessionManagement()
+                .maximumSessions(1)
+                .expiredUrl("/?needLogin=true")
+                .and()
+//                .sessionCreationPolicy(SessionCreationPolicy.ALWAYS)
+                .and()
+
+                .authorizeRequests()
                 .antMatchers("/chat/**").authenticated()
                 .antMatchers("/room/**").authenticated()
                 .anyRequest().permitAll()

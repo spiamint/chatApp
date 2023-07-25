@@ -57,6 +57,9 @@ GPT 요청 질문 목록은 이전 질문을 포함하도록 설정되어 있습
 
 관전자는 해당 게임이 종료되면 플레이어로서 다음 게임에 참가 가능합니다.
 
+## 3. 후기
+[블로그](https://spiaminto.tistory.com/category/%ED%95%99%EC%8A%B5%EC%A0%95%EB%A6%AC%28%EA%B3%B5%EA%B0%9C%29)
+
 
 
 

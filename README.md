@@ -2,6 +2,7 @@
 ## 개요
 ### [프로젝트 바로가기](http://spiachat.ap-northeast-2.elasticbeanstalk.com/)    
 ___샘플 ID: sample / PW: sample123___ , 자유롭게 이용 가능합니다.  
+위의 프로젝트 바로가기는 [이 프로젝트](https://github.com/spiamint/spiaChat) 로 배포된 링크입니다. 
 
 웹 소켓을 이용한 채팅 서비스에 Chat GPT 를 적용한 프로젝트입니다.<br>
 채팅방에 접속중인 유저는 GPT 에 다대일 질문이 가능합니다.<br>

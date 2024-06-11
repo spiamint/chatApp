@@ -231,7 +231,7 @@ public class TwentyGameService {
 
             if (memberInfoService.isRoomAllDead(roomId)) {
                 // 모든 유저가 정답을 맞히지 못함.
-                gptRespMessage = proceedAbort(roomId, "모든 유저가 정답을 맞히지 못했습니다. 게임을 종료합니다.");
+                gptRespMessage = proceedAbort(roomId, "모든 유저가 정답을 맞히지 못했습니다. 게임을 종료합니다. @정답: " + twentyAnswer);
             }
         }
 

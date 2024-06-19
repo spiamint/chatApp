@@ -1,6 +1,6 @@
 # 채팅 with GPT
 ## 개요
-### [프로젝트 바로가기](http://spiachat.ap-northeast-2.elasticbeanstalk.com/)    
+### [프로젝트 바로가기](http://spiaminto.ap-northeast-2.elasticbeanstalk.com/spiachat/lobby)    
 ___샘플 ID: sample / PW: sample123___ , 자유롭게 이용 가능합니다.  
 위의 프로젝트 바로가기는 [이 프로젝트](https://github.com/spiamint/spiaChat) 로 배포된 링크입니다. 
 
